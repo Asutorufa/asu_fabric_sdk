@@ -16,6 +16,10 @@ func get(a string) {
 			ServerNameOverride: "peer-0-baas98",
 			Timeout:            6 * time.Second,
 		},
+		chaincode.MSPOpt{
+			Path: "/mnt/shareSSD/code/YunPhant/wasabi_3/src/wasabi/backEnd/conf/nfs_data/baas98/msp/baas98/peers/peer-0-baas98/msp",
+			Id:   "baas98",
+		},
 		[][]byte{[]byte("get"), []byte(a)},
 		"channel1",
 		[]string{"192.168.9.196:30060"},

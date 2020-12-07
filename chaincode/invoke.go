@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fabricSDK/chaincode/orderclient"
-	"fabricSDK/chaincode/peerclient"
+	"fabricSDK/chaincode/client/clientcommon"
+	"fabricSDK/chaincode/client/orderclient"
+	"fabricSDK/chaincode/client/peerclient"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -16,277 +17,16 @@ import (
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric/msp/mgmt"
 	"github.com/hyperledger/fabric/protoutil"
 )
-
-// processProposals sends a signed proposal to a set of peers, and gathers all the responses.
-func processProposals(endorserClients []peer.EndorserClient, signedProposal *peer.SignedProposal) ([]*peer.ProposalResponse, error) {
-	responsesCh := make(chan *peer.ProposalResponse, len(endorserClients))
-	errorCh := make(chan error, len(endorserClients))
-	wg := sync.WaitGroup{}
-	for _, endorser := range endorserClients {
-		wg.Add(1)
-		go func(endorser peer.EndorserClient) {
-			defer wg.Done()
-			proposalResp, err := endorser.ProcessProposal(context.Background(), signedProposal)
-			if err != nil {
-				errorCh <- err
-				return
-			}
-			responsesCh <- proposalResp
-		}(endorser)
-	}
-	wg.Wait()
-	close(responsesCh)
-	close(errorCh)
-	for err := range errorCh {
-		return nil, err
-	}
-	var responses []*peer.ProposalResponse
-	for response := range responsesCh {
-		responses = append(responses, response)
-	}
-	return responses, nil
-}
-
-var (
-//spec *peer.ChaincodeSpec
-//cID  string
-//txID string
-//signer identity.SignerSerializer
-//certificate     tls.Certificate
-//endorserClients []peer.EndorserClient
-//deliverClients  []peer.DeliverClient
-
-//bc common.BroadCastClient
-//option string
-
-// caFile string // <- orderer_tls_rootcert_file
-// keyFile string // <- orderer_tls_clientKey_file
-// certFile string // <- orderer_tls_clientCert_file
-// orderingEndpoint string // <- orderer_address
-// ordererTLSHostnameOverride // <- orderer_tls_serverhostoverride
-// tlsEnabled bool // <- orderer_tls_enabled
-// clientAuth bool // <- orderer_tls_clientAuthRequired
-// connTimeout time.Duration // <- orderer_client_connTimeout
-// tlsHandshakeTimeShift time.Duration // <- orderer_tls_handshakeTimeShift
-)
-
-func GetEndorserClient(client *peerclient.PeerClient) (peer.EndorserClient, error) {
-	return client.Endorser()
-}
-
-func GetDeliverClient(peer *peerclient.PeerClient) (peer.DeliverClient, error) {
-	return peer.PeerDeliver()
-}
-
-func GetCertificate(peer *peerclient.PeerClient) tls.Certificate {
-	return peer.Certificate()
-}
-
-func GetSigner() (msp.SigningIdentity, error) {
-	err := mgmt.LoadLocalMspWithType(
-		"/mnt/shareSSD/code/YunPhant/wasabi_3/src/wasabi/backEnd/conf/nfs_data/baas98/msp/baas98/peers/peer-0-baas98/msp", // core.yaml -> peer_mspConfigPath
-		factory.GetDefaultOpts(),
-		"baas98",                             // peer_localMspId
-		msp.ProviderTypeToString(msp.FABRIC), // peer_localMspType, DEFAULT: SW
-	)
-	if err != nil {
-		return nil, err
-	}
-	return mgmt.GetLocalMSP(factory.GetDefault()).GetDefaultSigningIdentity()
-}
-
-func GetBroadcastClient(order *orderclient.OrdererClient) (orderer.AtomicBroadcast_BroadcastClient, error) {
-	return order.Broadcast()
-}
-
-// getChaincodeSpec
-// path Chaincode Path
-// name Chaincode Name
-// version Chaincode Version
-// isInit
-// args Invoke or Query arguments
-func getChaincodeSpec(
-	path string,
-	name string,
-	isInit bool,
-	version string,
-	args [][]byte,
-) *peer.ChaincodeSpec {
-	return &peer.ChaincodeSpec{
-		Type: peer.ChaincodeSpec_GOLANG, // <- from fabric-protos-go
-		ChaincodeId: &peer.ChaincodeID{
-			Path:    path,
-			Name:    name,
-			Version: version,
-		},
-		Input: &peer.ChaincodeInput{
-			Args:        args,
-			Decorations: map[string][]byte{},
-			IsInit:      isInit,
-		},
-	}
-}
-
-func getChaincodeInvocationSpec(
-	path string,
-	name string,
-	isInit bool,
-	version string,
-	args [][]byte) *peer.ChaincodeInvocationSpec {
-	return &peer.ChaincodeInvocationSpec{
-		ChaincodeSpec: getChaincodeSpec(
-			path,
-			name,
-			isInit,
-			version,
-			args,
-		),
-	}
-}
-
-type ChainOpt struct {
-	Path    string
-	Name    string
-	IsInit  bool
-	Version string
-}
-
-type GrpcTLSOpt2 struct {
-	ClientCrtPath string
-	ClientKeyPath string
-	CaPath        string
-
-	ServerNameOverride string
-	Timeout            time.Duration
-}
-
-type GrpcTLSOpt struct {
-	ClientCrt []byte
-	ClientKey []byte
-	Ca        []byte
-
-	ServerNameOverride string
-
-	Timeout time.Duration
-}
-
-func Query2(
-	chaincode ChainOpt,
-	peerGrpcOpt GrpcTLSOpt2,
-	args [][]byte,
-	channelID string,
-	peerAddress []string,
-) (*peer.ProposalResponse, error) {
-	grpc := GrpcTLSOpt{
-		ServerNameOverride: peerGrpcOpt.ServerNameOverride,
-		Timeout:            peerGrpcOpt.Timeout,
-	}
-	var err error
-	switch {
-	case peerGrpcOpt.CaPath != "":
-		grpc.Ca, err = ioutil.ReadFile(peerGrpcOpt.CaPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case peerGrpcOpt.ClientKeyPath != "":
-		grpc.ClientKey, err = ioutil.ReadFile(peerGrpcOpt.ClientKeyPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case peerGrpcOpt.ClientCrtPath != "":
-		grpc.ClientCrt, err = ioutil.ReadFile(peerGrpcOpt.ClientCrtPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return Query(
-		chaincode,
-		grpc,
-		args,
-		channelID,
-		"",
-		peerAddress,
-	)
-}
-
-func Query(
-	chaincode ChainOpt,
-	peerGrpcOpt GrpcTLSOpt,
-	args [][]byte,
-	channelID string,
-	txID string,
-	peerAddress []string,
-) (*peer.ProposalResponse, error) {
-	invocation := getChaincodeInvocationSpec(
-		chaincode.Path,
-		chaincode.Name,
-		chaincode.IsInit,
-		chaincode.Version,
-		args,
-	)
-	signer, err := GetSigner()
-	if err != nil {
-		return nil, fmt.Errorf("GetSigner() -> %v", err)
-	}
-	creator, err := signer.Serialize()
-	if err != nil {
-		return nil, fmt.Errorf("signer.Serialize() -> %v", err)
-	}
-
-	prop, txid, err := protoutil.CreateChaincodeProposalWithTxIDAndTransient(
-		common.HeaderType_ENDORSER_TRANSACTION,
-		channelID,
-		invocation,
-		creator,
-		txID,
-		map[string][]byte{},
-	)
-	if err != nil {
-		return nil, fmt.Errorf("protoutil.CreateChaincodeProposalWithTxIDAndTransient() -> %v", err)
-	}
-
-	signedProp, err := protoutil.GetSignedProposal(prop, signer)
-	if err != nil {
-		return nil, fmt.Errorf("protoutil.GetSignedProposal() -> %v", err)
-	}
-	var endorserClients []peer.EndorserClient
-	for index := range peerAddress {
-		peerClient, err := peerclient.NewPeerClient(
-			peerAddress[index],
-			peerGrpcOpt.ServerNameOverride,
-			peerclient.WithTLS2(peerGrpcOpt.Ca),
-			peerclient.WithClientCert2(peerGrpcOpt.ClientKey, peerGrpcOpt.ClientCrt),
-			peerclient.WithTimeout(peerGrpcOpt.Timeout),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("NewPeerClient() -> %v", err)
-		}
-		endorserClient, err := peerClient.Endorser()
-		if err != nil {
-			return nil, fmt.Errorf("peerClient.Endorser() -> %v", err)
-		}
-		endorserClients = append(endorserClients, endorserClient)
-	}
-	responses, err := processProposals(endorserClients, signedProp)
-	if err != nil {
-		return nil, fmt.Errorf("processProposals() -> %v", err)
-	}
-	fmt.Printf("txid: %s\n", txid)
-	return responses[0], nil
-}
 
 func Invoke2(
 	chaincode ChainOpt,
 	peerGrpcOpt GrpcTLSOpt2,
 	ordererGrpcOpt GrpcTLSOpt2,
+	mspOpt MSPOpt,
 	args [][]byte, // [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
 	channelID string,
 	peerAddress []string,
@@ -342,6 +82,7 @@ func Invoke2(
 		chaincode,
 		peerGrpc,
 		ordererGrpc,
+		mspOpt,
 		args,
 		channelID,
 		"",
@@ -354,6 +95,7 @@ func Invoke(
 	chaincode ChainOpt,
 	peerGrpcOpt GrpcTLSOpt,
 	ordererGrpcOpt GrpcTLSOpt,
+	mspOpt MSPOpt,
 	args [][]byte, // [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
 	channelID string,
 	txID string,
@@ -368,7 +110,7 @@ func Invoke(
 		chaincode.Version,
 		args,
 	)
-	signer, err := GetSigner()
+	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -398,6 +140,7 @@ func Invoke(
 		return nil, err
 	}
 
+	var peerClients []*peerclient.PeerClient
 	var endorserClients []peer.EndorserClient
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
@@ -405,13 +148,14 @@ func Invoke(
 		peerClient, err := peerclient.NewPeerClient(
 			peerAddress[index],
 			peerGrpcOpt.ServerNameOverride,
-			peerclient.WithClientCert2(peerGrpcOpt.ClientKey, peerGrpcOpt.ClientCrt),
-			peerclient.WithTLS2(peerGrpcOpt.Ca),
-			peerclient.WithTimeout(peerGrpcOpt.Timeout),
+			clientcommon.WithClientCert2(peerGrpcOpt.ClientKey, peerGrpcOpt.ClientCrt),
+			clientcommon.WithTLS2(peerGrpcOpt.Ca),
+			clientcommon.WithTimeout(peerGrpcOpt.Timeout),
 		)
 		if err != nil {
 			return nil, err
 		}
+		peerClients = append(peerClients, peerClient)
 		certificate = peerClient.Certificate()
 		endorserClient, err := peerClient.Endorser()
 		if err != nil {
@@ -425,6 +169,12 @@ func Invoke(
 		}
 		deliverClients = append(deliverClients, deliverClient)
 	}
+	defer func() {
+		for index := range peerClients {
+			peerClients[index].Close()
+		}
+	}()
+
 	responses, err := processProposals(endorserClients, signedProp)
 	if err != nil {
 		return nil, err
@@ -444,7 +194,7 @@ func Invoke(
 		return resp, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
 	dg := NewDeliverGroup(
@@ -464,14 +214,15 @@ func Invoke(
 	order, err := orderclient.NewOrdererClient(
 		ordererAddress,
 		ordererGrpcOpt.ServerNameOverride,
-		orderclient.WithClientCert2(ordererGrpcOpt.ClientKey, ordererGrpcOpt.ClientCrt),
-		orderclient.WithTLS2(ordererGrpcOpt.Ca),
-		orderclient.WithTimeout(ordererGrpcOpt.Timeout),
+		clientcommon.WithClientCert2(ordererGrpcOpt.ClientKey, ordererGrpcOpt.ClientCrt),
+		clientcommon.WithTLS2(ordererGrpcOpt.Ca),
+		clientcommon.WithTimeout(ordererGrpcOpt.Timeout),
 	)
 	if err != nil {
 		return nil, err
 	}
-	ordererClient, err := GetBroadcastClient(order)
+	defer order.Close()
+	ordererClient, err := order.Broadcast()
 	if err != nil {
 		return nil, err
 	}
