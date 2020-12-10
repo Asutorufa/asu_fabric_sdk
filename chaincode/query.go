@@ -4,7 +4,6 @@ import (
 	"fabricSDK/chaincode/client/clientcommon"
 	"fabricSDK/chaincode/client/peerclient"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -19,29 +18,9 @@ func Query2(
 	channelID string,
 	peerAddress []string,
 ) (*peer.ProposalResponse, error) {
-	grpc := GrpcTLSOpt{
-		ServerNameOverride: peerGrpcOpt.ServerNameOverride,
-		Timeout:            peerGrpcOpt.Timeout,
-	}
-	var err error
-	switch {
-	case peerGrpcOpt.CaPath != "":
-		grpc.Ca, err = ioutil.ReadFile(peerGrpcOpt.CaPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case peerGrpcOpt.ClientKeyPath != "":
-		grpc.ClientKey, err = ioutil.ReadFile(peerGrpcOpt.ClientKeyPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case peerGrpcOpt.ClientCrtPath != "":
-		grpc.ClientCrt, err = ioutil.ReadFile(peerGrpcOpt.ClientCrtPath)
-		if err != nil {
-			return nil, err
-		}
+	grpc, err := GrpcTLSOpt2ToGrpcTLSOpt(peerGrpcOpt)
+	if err != nil {
+		return nil, err
 	}
 	return Query(
 		chaincode,
@@ -68,6 +47,7 @@ func Query(
 		chaincode.Name,
 		chaincode.IsInit,
 		chaincode.Version,
+		peer.ChaincodeSpec_GOLANG,
 		args,
 	)
 	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)

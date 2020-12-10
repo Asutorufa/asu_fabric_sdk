@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fabricSDK/chaincode/client/orderclient"
 	"fabricSDK/chaincode/client/peerclient"
+	"io/ioutil"
 	"sync"
 	"time"
 
@@ -40,9 +41,10 @@ func getChaincodeSpec(
 	isInit bool,
 	version string,
 	args [][]byte,
+	Type peer.ChaincodeSpec_Type,
 ) *peer.ChaincodeSpec {
 	return &peer.ChaincodeSpec{
-		Type: peer.ChaincodeSpec_GOLANG, // <- from fabric-protos-go
+		Type: Type, // <- from fabric-protos-go
 		ChaincodeId: &peer.ChaincodeID{
 			Path:    path,
 			Name:    name,
@@ -61,6 +63,7 @@ func getChaincodeInvocationSpec(
 	name string,
 	isInit bool,
 	version string,
+	Type peer.ChaincodeSpec_Type,
 	args [][]byte) *peer.ChaincodeInvocationSpec {
 	return &peer.ChaincodeInvocationSpec{
 		ChaincodeSpec: getChaincodeSpec(
@@ -69,15 +72,18 @@ func getChaincodeInvocationSpec(
 			isInit,
 			version,
 			args,
+			Type,
 		),
 	}
 }
 
 type ChainOpt struct {
-	Path    string
-	Name    string
-	IsInit  bool
-	Version string
+	Path     string
+	Name     string
+	IsInit   bool
+	Version  string
+	Sequence int64
+	Type     peer.ChaincodeSpec_Type
 }
 
 type GrpcTLSOpt2 struct {
@@ -97,6 +103,31 @@ type GrpcTLSOpt struct {
 	ServerNameOverride string
 
 	Timeout time.Duration
+}
+
+func GrpcTLSOpt2ToGrpcTLSOpt(g GrpcTLSOpt2) (gg GrpcTLSOpt, err error) {
+	switch {
+	case g.ClientCrtPath != "":
+		gg.ClientCrt, err = ioutil.ReadFile(g.ClientCrtPath)
+		if err != nil {
+			return
+		}
+		fallthrough
+	case g.ClientKeyPath != "":
+		gg.ClientKey, err = ioutil.ReadFile(g.ClientKeyPath)
+		if err != nil {
+			return
+		}
+		fallthrough
+	case g.CaPath != "":
+		gg.Ca, err = ioutil.ReadFile(g.CaPath)
+		if err != nil {
+			return
+		}
+	}
+	gg.ServerNameOverride = g.ServerNameOverride
+	gg.Timeout = g.Timeout
+	return
 }
 
 type MSPOpt struct {

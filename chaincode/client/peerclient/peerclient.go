@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fabricSDK/chaincode/client/grpcclient"
-	"fmt"
 
 	"google.golang.org/grpc"
 
@@ -37,9 +36,9 @@ func NewPeerClient(address, override string, Opt ...func(*grpcclient.ClientConfi
 	for index := range Opt {
 		Opt[index](config)
 	}
-	fmt.Println(string(config.SecOpts.Certificate))
-	fmt.Println(config.SecOpts.ServerRootCAs)
-	fmt.Println(string(config.SecOpts.Key))
+	//fmt.Println(string(config.SecOpts.Certificate))
+	//fmt.Println(config.SecOpts.ServerRootCAs)
+	//fmt.Println(string(config.SecOpts.Key))
 	p = new(PeerClient)
 	p.address = address
 	p.sn = override

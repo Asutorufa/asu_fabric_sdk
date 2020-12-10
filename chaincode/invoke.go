@@ -8,7 +8,6 @@ import (
 	"fabricSDK/chaincode/client/orderclient"
 	"fabricSDK/chaincode/client/peerclient"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"sync"
 	"time"
@@ -32,51 +31,14 @@ func Invoke2(
 	peerAddress []string,
 	ordererAddress string,
 ) (*peer.ProposalResponse, error) {
-	peerGrpc := GrpcTLSOpt{
-		ServerNameOverride: peerGrpcOpt.ServerNameOverride,
-		Timeout:            peerGrpcOpt.Timeout,
+	peerGrpc, err := GrpcTLSOpt2ToGrpcTLSOpt(peerGrpcOpt)
+	if err != nil {
+		return nil, err
 	}
-	ordererGrpc := GrpcTLSOpt{
-		ServerNameOverride: ordererGrpcOpt.ServerNameOverride,
-		Timeout:            ordererGrpcOpt.Timeout,
-	}
-	var err error
-	switch {
-	case peerGrpcOpt.CaPath != "":
-		peerGrpc.Ca, err = ioutil.ReadFile(peerGrpcOpt.CaPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case peerGrpcOpt.ClientKeyPath != "":
-		peerGrpc.ClientKey, err = ioutil.ReadFile(peerGrpcOpt.ClientKeyPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case peerGrpcOpt.ClientCrtPath != "":
-		peerGrpc.ClientCrt, err = ioutil.ReadFile(peerGrpcOpt.ClientCrtPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case ordererGrpcOpt.CaPath != "":
-		ordererGrpc.Ca, err = ioutil.ReadFile(ordererGrpcOpt.CaPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case ordererGrpcOpt.ClientKeyPath != "":
-		ordererGrpc.ClientKey, err = ioutil.ReadFile(ordererGrpcOpt.ClientKeyPath)
-		if err != nil {
-			return nil, err
-		}
-		fallthrough
-	case ordererGrpcOpt.ClientCrtPath != "":
-		ordererGrpc.ClientCrt, err = ioutil.ReadFile(ordererGrpcOpt.ClientCrtPath)
-		if err != nil {
-			return nil, err
-		}
+
+	ordererGrpc, err := GrpcTLSOpt2ToGrpcTLSOpt(ordererGrpcOpt)
+	if err != nil {
+		return nil, err
 	}
 	return Invoke(
 		chaincode,
@@ -108,6 +70,7 @@ func Invoke(
 		chaincode.Name,
 		chaincode.IsInit,
 		chaincode.Version,
+		peer.ChaincodeSpec_GOLANG,
 		args,
 	)
 	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)
