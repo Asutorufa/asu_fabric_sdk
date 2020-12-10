@@ -28,7 +28,7 @@ func Query2(
 		mspOpt,
 		args,
 		channelID,
-		"",
+		//"",
 		peerAddress,
 	)
 }
@@ -39,7 +39,7 @@ func Query(
 	mspOpt MSPOpt,
 	args [][]byte,
 	channelID string,
-	txID string,
+	//txID string,
 	peerAddress []string,
 ) (*peer.ProposalResponse, error) {
 	invocation := getChaincodeInvocationSpec(
@@ -59,13 +59,13 @@ func Query(
 		return nil, fmt.Errorf("signer.Serialize() -> %v", err)
 	}
 
-	prop, txid, err := protoutil.CreateChaincodeProposalWithTxIDAndTransient(
+	prop, txid, err := protoutil.CreateChaincodeProposal(
 		common.HeaderType_ENDORSER_TRANSACTION,
 		channelID,
 		invocation,
 		creator,
-		txID,
-		map[string][]byte{},
+		//txID,
+		//map[string][]byte{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("protoutil.CreateChaincodeProposalWithTxIDAndTransient() -> %v", err)

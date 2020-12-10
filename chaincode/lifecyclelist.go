@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/hyperledger/fabric/common/policydsl"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -245,4 +247,65 @@ func QueryCommitted2(
 	}
 
 	return QueryCommitted(chainOpt, grpc, mspOpt, channelID, peerAddress)
+}
+
+func CheckCommittedReadiness2(
+	chainOpt ChainOpt,
+	peerGrpcTLSOpt GrpcTLSOpt2,
+	mspOpt MSPOpt,
+	channelID string,
+	peerAddress string,
+) (*peer.ProposalResponse, error) {
+	grpc, err := GrpcTLSOpt2ToGrpcTLSOpt(peerGrpcTLSOpt)
+	if err != nil {
+		return nil, err
+	}
+
+	return CheckCommittedReadiness(chainOpt, grpc, mspOpt, channelID, peerAddress)
+}
+
+func CheckCommittedReadiness(
+	chainOpt ChainOpt,
+	peerGrpcTLSOpt GrpcTLSOpt,
+	mspOpt MSPOpt,
+	channelID string,
+	peerAddress string,
+) (*peer.ProposalResponse, error) {
+	signaturePolicyEnvelope, err := policydsl.FromString(chainOpt.Policy)
+	if err != nil {
+		return nil, err
+	}
+
+	applicationPolicy := &peer.ApplicationPolicy{
+		Type: &peer.ApplicationPolicy_SignaturePolicy{
+			SignaturePolicy: signaturePolicyEnvelope,
+		},
+	}
+	args := &lifecycle.CheckCommitReadinessArgs{
+		Sequence:            chainOpt.Sequence,
+		Name:                chainOpt.Name,
+		Version:             chainOpt.Name,
+		EndorsementPlugin:   chainOpt.EndorsementPlugin,
+		ValidationPlugin:    chainOpt.ValidationPlugin,
+		ValidationParameter: protoutil.MarshalOrPanic(applicationPolicy),
+		Collections:         nil,
+		InitRequired:        chainOpt.IsInit,
+	}
+
+	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	proposal, err := createProposal(args, signer, checkCommitReadinessFuncName, channelID)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := query(peerGrpcTLSOpt, signer, proposal, peerAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

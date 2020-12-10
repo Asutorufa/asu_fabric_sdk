@@ -78,12 +78,16 @@ func getChaincodeInvocationSpec(
 }
 
 type ChainOpt struct {
-	Path     string
-	Name     string
-	IsInit   bool
-	Version  string
-	Sequence int64
-	Type     peer.ChaincodeSpec_Type
+	Path              string
+	Name              string
+	IsInit            bool
+	Version           string
+	PackageID         string
+	Sequence          int64
+	EndorsementPlugin string
+	ValidationPlugin  string
+	Policy            string
+	Type              peer.ChaincodeSpec_Type
 }
 
 type GrpcTLSOpt2 struct {

@@ -47,7 +47,7 @@ func Invoke2(
 		mspOpt,
 		args,
 		channelID,
-		"",
+		//"",
 		peerAddress,
 		ordererAddress,
 	)
@@ -60,7 +60,7 @@ func Invoke(
 	mspOpt MSPOpt,
 	args [][]byte, // [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
 	channelID string,
-	txID string,
+	//txID string,
 	peerAddress []string,
 	ordererAddress string,
 ) (*peer.ProposalResponse, error) {
@@ -86,13 +86,13 @@ func Invoke(
 	//	"cert": []byte("transient"),
 	//}
 
-	prop, txid, err := protoutil.CreateChaincodeProposalWithTxIDAndTransient(
+	prop, txid, err := protoutil.CreateChaincodeProposal(
 		common.HeaderType_ENDORSER_TRANSACTION,
 		channelID,
 		invocation,
 		creator,
-		txID,
-		map[string][]byte{},
+		//txID,
+		//map[string][]byte{},
 	)
 	if err != nil {
 		return nil, err
