@@ -21,48 +21,59 @@ import (
 	"github.com/hyperledger/fabric/protoutil"
 )
 
+// Invoke2 arguments detail function Invoke
 func Invoke2(
 	chaincode ChainOpt,
-	peerGrpcOpt GrpcTLSOpt2,
-	ordererGrpcOpt GrpcTLSOpt2,
 	mspOpt MSPOpt,
 	args [][]byte, // [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
+	privateData map[string][]byte,
 	channelID string,
-	peerAddress []string,
-	ordererAddress string,
+	peers []Endpoint2,
+	orderer Endpoint2,
 ) (*peer.ProposalResponse, error) {
-	peerGrpc, err := GrpcTLSOpt2ToGrpcTLSOpt(peerGrpcOpt)
-	if err != nil {
-		return nil, err
+	var eps []Endpoint
+	for index := range peers {
+		ep, err := Endpoint2ToEndpoint(peers[index])
+		if err != nil {
+			return nil, err
+		}
+		eps = append(eps, ep)
 	}
-
-	ordererGrpc, err := GrpcTLSOpt2ToGrpcTLSOpt(ordererGrpcOpt)
+	ordereR, err := Endpoint2ToEndpoint(orderer)
 	if err != nil {
 		return nil, err
 	}
 	return Invoke(
 		chaincode,
-		peerGrpc,
-		ordererGrpc,
 		mspOpt,
 		args,
+		privateData,
 		channelID,
 		//"",
-		peerAddress,
-		ordererAddress,
+		eps,
+		ordereR,
 	)
 }
 
+// Invoke
+// chaincode just need Path,Name,IsInit, Version, Type
+// peerGrpcOpt Timeout is necessary
+// ordererGrpcOpt Timeout is necessary
+// mspOpt necessary
+// args [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
+// privateData not necessary, like: map[string][]byte{"cert":[]byte("transient")}, more: https://hyperledger-fabric.readthedocs.io/zh_CN/latest/private_data_tutorial.html
+// channelID necessary channel name
+// peerAddress necessary peer address array
+// ordererAddress necessary orderer address
 func Invoke(
 	chaincode ChainOpt,
-	peerGrpcOpt GrpcTLSOpt,
-	ordererGrpcOpt GrpcTLSOpt,
 	mspOpt MSPOpt,
-	args [][]byte, // [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
+	args [][]byte,
+	privateData map[string][]byte,
 	channelID string,
 	//txID string,
-	peerAddress []string,
-	ordererAddress string,
+	peers []Endpoint,
+	orderer Endpoint,
 ) (*peer.ProposalResponse, error) {
 
 	invocation := getChaincodeInvocationSpec(
@@ -86,13 +97,18 @@ func Invoke(
 	//	"cert": []byte("transient"),
 	//}
 
-	prop, txid, err := protoutil.CreateChaincodeProposal(
+	prop, txid, err := protoutil.CreateChaincodeProposalWithTxIDAndTransient(
 		common.HeaderType_ENDORSER_TRANSACTION,
 		channelID,
 		invocation,
 		creator,
-		//txID,
-		//map[string][]byte{},
+		"",
+		privateData, // transientMap <- 因为链码提案被存储在区块链上，
+		// 不要把私有数据包含在链码提案中也是非常重要的。
+		//在链码提案中有一个特殊的字段 transient，
+		//可以用它把私有数据来从客户端（或者链码将用来生成私有数据的数据）传递给节点上的链码调用。
+		//链码可以通过调用 GetTransient() API 来获取 transient 字段。
+		//这个 transient 字段会从通道交易中被排除
 	)
 	if err != nil {
 		return nil, err
@@ -107,13 +123,13 @@ func Invoke(
 	var endorserClients []peer.EndorserClient
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
-	for index := range peerAddress {
+	for index := range peers {
 		peerClient, err := peerclient.NewPeerClient(
-			peerAddress[index],
-			peerGrpcOpt.ServerNameOverride,
-			clientcommon.WithClientCert2(peerGrpcOpt.ClientKey, peerGrpcOpt.ClientCrt),
-			clientcommon.WithTLS2(peerGrpcOpt.Ca),
-			clientcommon.WithTimeout(peerGrpcOpt.Timeout),
+			peers[index].Address,
+			peers[index].GrpcTLSOpt.ServerNameOverride,
+			clientcommon.WithClientCert2(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
+			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
 			return nil, err
@@ -134,7 +150,7 @@ func Invoke(
 	}
 	defer func() {
 		for index := range peerClients {
-			peerClients[index].Close()
+			_ = peerClients[index].Close()
 		}
 	}()
 
@@ -160,9 +176,13 @@ func Invoke(
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 
+	var eps []string
+	for index := range peers {
+		eps = append(eps, peers[index].Address)
+	}
 	dg := NewDeliverGroup(
 		deliverClients,
-		peerAddress,
+		eps,
 		signer,
 		certificate,
 		channelID,
@@ -175,11 +195,11 @@ func Invoke(
 	}
 
 	order, err := orderclient.NewOrdererClient(
-		ordererAddress,
-		ordererGrpcOpt.ServerNameOverride,
-		clientcommon.WithClientCert2(ordererGrpcOpt.ClientKey, ordererGrpcOpt.ClientCrt),
-		clientcommon.WithTLS2(ordererGrpcOpt.Ca),
-		clientcommon.WithTimeout(ordererGrpcOpt.Timeout),
+		orderer.Address,
+		orderer.GrpcTLSOpt.ServerNameOverride,
+		clientcommon.WithClientCert2(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
+		clientcommon.WithTLS2(orderer.GrpcTLSOpt.Ca),
+		clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 	)
 	if err != nil {
 		return nil, err

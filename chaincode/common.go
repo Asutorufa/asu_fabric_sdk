@@ -87,6 +87,7 @@ type ChainOpt struct {
 	EndorsementPlugin string
 	ValidationPlugin  string
 	Policy            string
+	CollectionConfig  string
 	Type              peer.ChaincodeSpec_Type
 }
 
@@ -107,6 +108,28 @@ type GrpcTLSOpt struct {
 	ServerNameOverride string
 
 	Timeout time.Duration
+}
+
+type Endpoint struct {
+	Address string
+	GrpcTLSOpt
+}
+
+type Endpoint2 struct {
+	Address string
+	GrpcTLSOpt2
+}
+
+func Endpoint2ToEndpoint(p Endpoint2) (Endpoint, error) {
+	opt, err := GrpcTLSOpt2ToGrpcTLSOpt(p.GrpcTLSOpt2)
+	if err != nil {
+		return Endpoint{}, err
+	}
+
+	return Endpoint{
+		Address:    p.Address,
+		GrpcTLSOpt: opt,
+	}, nil
 }
 
 func GrpcTLSOpt2ToGrpcTLSOpt(g GrpcTLSOpt2) (gg GrpcTLSOpt, err error) {

@@ -12,35 +12,49 @@ import (
 
 func Query2(
 	chaincode ChainOpt,
-	peerGrpcOpt GrpcTLSOpt2,
 	mspOpt MSPOpt,
 	args [][]byte,
+	privateData map[string][]byte,
 	channelID string,
-	peerAddress []string,
+	peers []Endpoint2,
 ) (*peer.ProposalResponse, error) {
-	grpc, err := GrpcTLSOpt2ToGrpcTLSOpt(peerGrpcOpt)
-	if err != nil {
-		return nil, err
+	var peers2 []Endpoint
+
+	for index := range peers {
+		ep, err := Endpoint2ToEndpoint(peers[index])
+		if err != nil {
+			return nil, err
+		}
+		peers2 = append(peers2, ep)
 	}
+
 	return Query(
 		chaincode,
-		grpc,
 		mspOpt,
 		args,
+		privateData,
 		channelID,
 		//"",
-		peerAddress,
+		peers2,
 	)
 }
 
+// Query
+// chaincode Path,Name,IsInit,Version,Type are necessary
+// peerGrpcOpt Timeout is necessary
+// mspOpt necessary
+// args necessary
+// privateData not necessary
+// channelID necessary
+// peerAddress necessary
 func Query(
 	chaincode ChainOpt,
-	peerGrpcOpt GrpcTLSOpt,
 	mspOpt MSPOpt,
 	args [][]byte,
+	privateData map[string][]byte,
 	channelID string,
 	//txID string,
-	peerAddress []string,
+	peers []Endpoint,
 ) (*peer.ProposalResponse, error) {
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
@@ -59,13 +73,18 @@ func Query(
 		return nil, fmt.Errorf("signer.Serialize() -> %v", err)
 	}
 
-	prop, txid, err := protoutil.CreateChaincodeProposal(
+	prop, txid, err := protoutil.CreateChaincodeProposalWithTxIDAndTransient(
 		common.HeaderType_ENDORSER_TRANSACTION,
 		channelID,
 		invocation,
 		creator,
-		//txID,
-		//map[string][]byte{},
+		"",
+		privateData, // <- 因为链码提案被存储在区块链上，
+		// 不要把私有数据包含在链码提案中也是非常重要的。
+		//在链码提案中有一个特殊的字段 transient，
+		//可以用它把私有数据来从客户端（或者链码将用来生成私有数据的数据）传递给节点上的链码调用。
+		//链码可以通过调用 GetTransient() API 来获取 transient 字段。
+		//这个 transient 字段会从通道交易中被排除。
 	)
 	if err != nil {
 		return nil, fmt.Errorf("protoutil.CreateChaincodeProposalWithTxIDAndTransient() -> %v", err)
@@ -78,13 +97,13 @@ func Query(
 
 	var peerClients []*peerclient.PeerClient
 	var endorserClients []peer.EndorserClient
-	for index := range peerAddress {
+	for index := range peers {
 		peerClient, err := peerclient.NewPeerClient(
-			peerAddress[index],
-			peerGrpcOpt.ServerNameOverride,
-			clientcommon.WithTLS2(peerGrpcOpt.Ca),
-			clientcommon.WithClientCert2(peerGrpcOpt.ClientKey, peerGrpcOpt.ClientCrt),
-			clientcommon.WithTimeout(peerGrpcOpt.Timeout),
+			peers[index].Address,
+			peers[index].GrpcTLSOpt.ServerNameOverride,
+			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
+			clientcommon.WithClientCert2(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewPeerClient() -> %v", err)
@@ -99,7 +118,7 @@ func Query(
 	}
 	defer func() {
 		for index := range peerClients {
-			peerClients[index].Close()
+			_ = peerClients[index].Close()
 		}
 	}()
 
