@@ -12,7 +12,7 @@ func QueryCommitted(
 	//peerGrpcTLSOpt GrpcTLSOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
-	peer chaincode.Endpoint,
+	peer []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
 	var function string
 	var args proto.Message
@@ -43,9 +43,9 @@ func QueryCommitted2(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
-	peer chaincode.Endpoint2,
+	peer []chaincode.Endpoint2,
 ) (*peer.ProposalResponse, error) {
-	ep, err := chaincode.Endpoint2ToEndpoint(peer)
+	ep, err := chaincode.Endpoint2sToEndpoints(peer)
 	if err != nil {
 		return nil, err
 	}

@@ -2,11 +2,13 @@ package lifecycle
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"time"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
@@ -27,7 +29,7 @@ func query(
 	//peerGrpcOpt GrpcTLSOpt,
 	signer msp.SigningIdentity,
 	proposal *peer.Proposal,
-	peer chaincode.Endpoint,
+	peers []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
 
 	signedProposal, err := signProposal(proposal, signer)
@@ -35,26 +37,37 @@ func query(
 		return nil, err
 	}
 
-	peerClient, err := peerclient.NewPeerClient(
-		peer.Address,
-		peer.ServerNameOverride,
-		clientcommon.WithClientCert2(peer.ClientKey, peer.ClientCrt),
-		clientcommon.WithTLS2(peer.Ca),
-		clientcommon.WithTimeout(6*time.Second),
-	)
-	if err != nil {
-		return nil, err
+	var resps []*peer.ProposalResponse
+	for _, peer := range peers {
+		peerClient, err := peerclient.NewPeerClient(
+			peer.Address,
+			peer.ServerNameOverride,
+			clientcommon.WithClientCert2(peer.ClientKey, peer.ClientCrt),
+			clientcommon.WithTLS2(peer.Ca),
+			clientcommon.WithTimeout(6*time.Second),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		endorserClient, err := peerClient.Endorser()
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := endorserClient.ProcessProposal(context.Background(), signedProposal)
+		if err != nil {
+			return nil, err
+		}
+
+		resps = append(resps, resp)
 	}
 
-	endorserClient, err := peerClient.Endorser()
-	if err != nil {
-		return nil, err
+	if len(resps) == 0 {
+		return nil, fmt.Errorf("all peers response is empty")
 	}
 
-	resp, err := endorserClient.ProcessProposal(context.Background(), signedProposal)
-	if err != nil {
-		return nil, err
-	}
+	resp := resps[0]
 
 	if resp == nil {
 		return nil, fmt.Errorf("resp is nil")
@@ -65,6 +78,169 @@ func query(
 	}
 
 	return resp, nil
+}
+
+func queryAll(
+	//peerGrpcOpt GrpcTLSOpt,
+	signer msp.SigningIdentity,
+	proposal *peer.Proposal,
+	peers []chaincode.Endpoint,
+) ([]*peer.ProposalResponse, error) {
+
+	signedProposal, err := signProposal(proposal, signer)
+	if err != nil {
+		return nil, err
+	}
+
+	var resps []*peer.ProposalResponse
+	for _, peer := range peers {
+		peerClient, err := peerclient.NewPeerClient(
+			peer.Address,
+			peer.ServerNameOverride,
+			clientcommon.WithClientCert2(peer.ClientKey, peer.ClientCrt),
+			clientcommon.WithTLS2(peer.Ca),
+			clientcommon.WithTimeout(6*time.Second),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		endorserClient, err := peerClient.Endorser()
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := endorserClient.ProcessProposal(context.Background(), signedProposal)
+		if err != nil {
+			return nil, err
+		}
+
+		resps = append(resps, resp)
+	}
+
+	if len(resps) == 0 {
+		return nil, fmt.Errorf("all peers response is empty")
+	}
+
+	resp := resps[0]
+
+	if resp == nil {
+		return nil, fmt.Errorf("resp is nil")
+	}
+
+	if resp.Response.Status != int32(common.Status_SUCCESS) {
+		return nil, fmt.Errorf("%d - %s", resp.Response.Status, resp.Response.Message)
+	}
+
+	return resps, nil
+}
+
+func invoke(
+	signer msp.SigningIdentity,
+	proposal *peer.Proposal,
+	peers []chaincode.Endpoint,
+	orderers []chaincode.Endpoint,
+	channelID string,
+) (*peer.ProposalResponse, error) {
+	resp, err := queryAll(signer, proposal, peers)
+	if err != nil {
+		return nil, fmt.Errorf("invoke from peers error -> %v", err)
+	}
+
+	env, err := protoutil.CreateSignedTx(proposal, signer, resp...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create signed transaction -> %v", err)
+	}
+
+	//
+	//            orderers
+	//
+	var peerClients []*peerclient.PeerClient
+	var endorserClients []peer.EndorserClient
+	var deliverClients []peer.DeliverClient
+	var certificate tls.Certificate
+	for index := range peers {
+		peerClient, err := peerclient.NewPeerClient(
+			peers[index].Address,
+			peers[index].GrpcTLSOpt.ServerNameOverride,
+			clientcommon.WithClientCert2(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
+			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
+		)
+		if err != nil {
+			return nil, err
+		}
+		peerClients = append(peerClients, peerClient)
+		certificate = peerClient.Certificate()
+		endorserClient, err := peerClient.Endorser()
+		if err != nil {
+			return nil, err
+		}
+		endorserClients = append(endorserClients, endorserClient)
+
+		deliverClient, err := peerClient.PeerDeliver()
+		if err != nil {
+			return nil, err
+		}
+		deliverClients = append(deliverClients, deliverClient)
+	}
+	defer func() {
+		for index := range peerClients {
+			_ = peerClients[index].Close()
+		}
+	}()
+	var eps []string
+	for index := range peers {
+		eps = append(eps, peers[index].Address)
+	}
+
+	for _, orderer := range orderers {
+		txid := ""
+		dg := chaincode.NewDeliverGroup(
+			deliverClients,
+			eps,
+			signer,
+			certificate,
+			channelID,
+			txid,
+		)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+		err = dg.Connect(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		order, err := orderclient.NewOrdererClient(
+			orderer.Address,
+			orderer.GrpcTLSOpt.ServerNameOverride,
+			clientcommon.WithClientCert2(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
+			clientcommon.WithTLS2(orderer.GrpcTLSOpt.Ca),
+			clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer order.Close()
+		ordererClient, err := order.Broadcast()
+		if err != nil {
+			return nil, err
+		}
+		err = ordererClient.Send(env)
+		if err != nil {
+			return nil, err
+		}
+
+		if dg != nil && ctx != nil {
+			err = dg.Wait(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("dg.Wait() -> %v", err)
+			}
+		}
+	}
+
+	return nil, nil
 }
 
 func signProposal(proposal *peer.Proposal, signer msp.SigningIdentity) (*peer.SignedProposal, error) {

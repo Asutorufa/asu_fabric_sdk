@@ -3,6 +3,7 @@ package chaincode
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"sync"
 	"time"
@@ -80,17 +81,36 @@ func getChaincodeInvocationSpec(
 }
 
 type ChainOpt struct {
-	Path              string
+	Path                string
+	Name                string
+	IsInit              bool
+	Version             string
+	PackageID           string
+	Sequence            int64
+	EndorsementPlugin   string
+	ValidationPlugin    string
+	ValidationParameter []byte
+	Policy              string
+	CollectionConfig    string
+	CollectionsConfig   []PrivateDataCollectionConfig
+	// 详见: https://hyperledger-fabric.readthedocs.io/en/release-2.2/private_data_tutorial.html
+	Type peer.ChaincodeSpec_Type
+}
+
+type PrivateDataCollectionConfig struct {
 	Name              string
-	IsInit            bool
-	Version           string
-	PackageID         string
-	Sequence          int64
-	EndorsementPlugin string
-	ValidationPlugin  string
 	Policy            string
-	CollectionConfig  string
-	Type              peer.ChaincodeSpec_Type
+	RequiredPeerCount int32
+	MaxPeerCount      int32
+	BlockToLive       uint64
+	MemberOnlyRead    bool
+	MemberOnlyWrite   bool
+	EndorsementPolicy
+}
+
+type EndorsementPolicy struct {
+	ChannelConfigPolicy string
+	SignaturePolicy     string
 }
 
 type GrpcTLSOpt2 struct {
@@ -132,6 +152,19 @@ func Endpoint2ToEndpoint(p Endpoint2) (Endpoint, error) {
 		Address:    p.Address,
 		GrpcTLSOpt: opt,
 	}, nil
+}
+
+func Endpoint2sToEndpoints(p []Endpoint2) ([]Endpoint, error) {
+	var res []Endpoint
+	for index := range p {
+		tmp, err := Endpoint2ToEndpoint(p[index])
+		if err != nil {
+			return []Endpoint{}, fmt.Errorf("convert error -> %v", err)
+		}
+
+		res = append(res, tmp)
+	}
+	return res, nil
 }
 
 func GrpcTLSOpt2ToGrpcTLSOpt(g GrpcTLSOpt2) (gg GrpcTLSOpt, err error) {

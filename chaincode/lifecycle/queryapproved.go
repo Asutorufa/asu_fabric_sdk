@@ -17,7 +17,7 @@ func QueryApproved(
 	//peerGrpcOpt GrpcTLSOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
-	peer chaincode.Endpoint,
+	peer []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
 	var args proto.Message
 
@@ -48,14 +48,14 @@ func QueryApproved2(
 	//opt2 GrpcTLSOpt2,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
-	peer chaincode.Endpoint2,
+	peer []chaincode.Endpoint2,
 ) (*peer.ProposalResponse, error) {
 	//grpc, err := GrpcTLSOpt2ToGrpcTLSOpt(opt2)
 	//if err != nil {
 	//	return nil, err
 	//}
 
-	ep, err := chaincode.Endpoint2ToEndpoint(peer)
+	ep, err := chaincode.Endpoint2sToEndpoints(peer)
 	if err != nil {
 		return nil, err
 	}

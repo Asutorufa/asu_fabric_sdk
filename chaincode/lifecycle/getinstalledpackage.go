@@ -10,7 +10,7 @@ import (
 func GetInstalledPackage(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
-	peer chaincode.Endpoint,
+	peer []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
 	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
 	args := &lifecycle.GetInstalledChaincodePackageArgs{
@@ -31,9 +31,9 @@ func GetInstalledPackage(
 func GetInstalledPackage2(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
-	peer chaincode.Endpoint2,
+	peer []chaincode.Endpoint2,
 ) (*peer.ProposalResponse, error) {
-	ep, err := chaincode.Endpoint2ToEndpoint(peer)
+	ep, err := chaincode.Endpoint2sToEndpoints(peer)
 	if err != nil {
 		return nil, err
 	}
