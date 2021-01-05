@@ -4,13 +4,14 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"fabricSDK/chaincode/client/clientcommon"
-	"fabricSDK/chaincode/client/orderclient"
-	"fabricSDK/chaincode/client/peerclient"
 	"fmt"
 	"math"
 	"sync"
 	"time"
+
+	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
+	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/common"

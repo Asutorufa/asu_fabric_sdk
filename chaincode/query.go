@@ -1,9 +1,10 @@
 package chaincode
 
 import (
-	"fabricSDK/chaincode/client/clientcommon"
-	"fabricSDK/chaincode/client/peerclient"
 	"fmt"
+
+	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"

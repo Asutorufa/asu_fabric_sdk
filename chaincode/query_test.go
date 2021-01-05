@@ -35,16 +35,21 @@ func get(t *testing.T, a string) {
 	fmt.Println(resp.Response.Status, string(resp.Response.Payload))
 }
 
-func get2(t *testing.T, a string) {
+func TestQuery(t *testing.T) {
+	get(t, "a")
+	get(t, "b")
+}
+
+func get2(t *testing.T, b [][]byte) {
 	resp, err := Query2(
-		ChainOpt{Path: "sacc", Name: "sacc", IsInit: false, Version: "3.0"},
+		ChainOpt{Path: "assetTransfer", Name: "basic", IsInit: false, Version: "1.0"},
 		MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",
 			Id:   "Org1MSP",
 		},
-		[][]byte{[]byte("get"), []byte(a)},
+		b,
 		map[string][]byte{},
-		"channel1",
+		"mychannel",
 		[]Endpoint2{
 			{
 				Address: "127.0.0.1:7051",
@@ -66,11 +71,5 @@ func get2(t *testing.T, a string) {
 }
 
 func TestQuery2(t *testing.T) {
-	get2(t, "a")
-	get2(t, "b")
-}
-
-func TestQuery(t *testing.T) {
-	get(t, "a")
-	get(t, "b")
+	get2(t, [][]byte{[]byte("ReadAsset"), []byte("asset1")})
 }

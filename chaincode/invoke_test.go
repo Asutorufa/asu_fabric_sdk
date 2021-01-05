@@ -3,6 +3,8 @@ package chaincode
 import (
 	"testing"
 	"time"
+
+	"github.com/hyperledger/fabric-protos-go/peer"
 )
 
 func set(t *testing.T, a, b string) {
@@ -52,17 +54,17 @@ func TestInvoke(t *testing.T) {
 	set(t, "b", "xiaoxiao2")
 }
 
-func set2(t *testing.T, a, b string) {
+func set2(t *testing.T) {
 	resp, err := Invoke2(
-		ChainOpt{Path: "sacc", Name: "sacc", IsInit: false, Version: "3.0"},
+		ChainOpt{Path: "assetTransfer", Name: "basic", IsInit: false, Version: "1.0", Type: peer.ChaincodeSpec_GOLANG},
 
 		MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",
 			Id:   "Org1MSP",
 		},
-		[][]byte{[]byte("set"), []byte(a), []byte(b)},
+		[][]byte{[]byte("InitLedger")},
 		map[string][]byte{},
-		"channel1",
+		"mychannel",
 		[]Endpoint2{
 			{
 				Address: "127.0.0.1:7051",
@@ -95,5 +97,11 @@ func set2(t *testing.T, a, b string) {
 }
 
 func TestSet2(t *testing.T) {
-	set2(t, "b", "d")
+	set2(t)
+}
+
+func TestTSS(t *testing.T) {
+	a := time.Now().Round(time.Minute).Add(-5 * time.Minute)
+	t.Log(a.UTC())
+	t.Log(a.Add(5 * 365 * 24 * time.Hour).UTC())
 }

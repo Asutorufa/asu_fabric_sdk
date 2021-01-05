@@ -1,4 +1,4 @@
-package chaincode
+package lifecycle
 
 import (
 	"github.com/hyperledger/fabric-protos-go/peer"

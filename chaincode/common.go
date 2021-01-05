@@ -3,11 +3,12 @@ package chaincode
 import (
 	"context"
 	"crypto/tls"
-	"fabricSDK/chaincode/client/orderclient"
-	"fabricSDK/chaincode/client/peerclient"
 	"io/ioutil"
 	"sync"
 	"time"
+
+	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
+	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 
 	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -16,11 +17,12 @@ import (
 	"github.com/hyperledger/fabric/msp/mgmt"
 )
 
-func GetSigner(mspPath, mspId string) (msp.SigningIdentity, error) {
+// GetSigner initialize msp
+func GetSigner(mspPath, mspID string) (msp.SigningIdentity, error) {
 	err := mgmt.LoadLocalMspWithType(
 		mspPath, // core.yaml -> peer_mspConfigPath
 		factory.GetDefaultOpts(),
-		mspId,                                // peer_localMspId
+		mspID,                                // peer_localMspId
 		msp.ProviderTypeToString(msp.FABRIC), // peer_localMspType, DEFAULT: SW
 	)
 	if err != nil {

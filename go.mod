@@ -1,4 +1,4 @@
-module fabricSDK
+module github.com/Asutorufa/fabricsdk
 
 go 1.15
 
@@ -6,6 +6,7 @@ require (
 	github.com/Knetic/govaluate v3.0.0+incompatible // indirect
 	github.com/Shopify/sarama v1.27.2 // indirect
 	github.com/fsouza/go-dockerclient v1.6.6 // indirect
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.4.2
 	github.com/hashicorp/go-version v1.2.1 // indirect
 	github.com/hyperledger/fabric v2.1.1+incompatible

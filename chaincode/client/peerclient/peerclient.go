@@ -3,7 +3,8 @@ package peerclient
 import (
 	"context"
 	"crypto/tls"
-	"fabricSDK/chaincode/client/grpcclient"
+
+	"github.com/Asutorufa/fabricsdk/chaincode/client/grpcclient"
 
 	"google.golang.org/grpc"
 
