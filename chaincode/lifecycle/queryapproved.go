@@ -14,7 +14,6 @@ import (
 // peerAddress peer address
 func QueryApproved(
 	chainOpt chaincode.ChainOpt,
-	//peerGrpcOpt GrpcTLSOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
 	peer []chaincode.Endpoint,
@@ -32,7 +31,7 @@ func QueryApproved(
 		return nil, err
 	}
 
-	proposal, err := createProposal(args, signer, function, channelID)
+	proposal, _, err := createProposal(args, signer, function, channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,16 +44,10 @@ func QueryApproved(
 // others -> QueryApproved
 func QueryApproved2(
 	opt chaincode.ChainOpt,
-	//opt2 GrpcTLSOpt2,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
 	peer []chaincode.Endpoint2,
 ) (*peer.ProposalResponse, error) {
-	//grpc, err := GrpcTLSOpt2ToGrpcTLSOpt(opt2)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	ep, err := chaincode.Endpoint2sToEndpoints(peer)
 	if err != nil {
 		return nil, err

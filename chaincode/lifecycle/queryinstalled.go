@@ -28,7 +28,7 @@ func QueryInstalled(
 		return nil, err
 	}
 
-	proposal, err := createProposal(&lifecycle.QueryInstalledChaincodeArgs{}, signer, "QueryInstalledChaincodes", "")
+	proposal, _, err := createProposal(&lifecycle.QueryInstalledChaincodeArgs{}, signer, "QueryInstalledChaincodes", "")
 	if err != nil {
 		return nil, err
 	}

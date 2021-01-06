@@ -9,11 +9,14 @@ import (
 	"github.com/hyperledger/fabric/common/policydsl"
 )
 
+// ApproveForMyOrg approve for my org
+// chainOpt -> need: Name,Version,Sequence optional: others
 func ApproveForMyOrg(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
 	peers []chaincode.Endpoint,
+	orderers []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
 	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
 	if err != nil {
@@ -103,12 +106,31 @@ func ApproveForMyOrg(
 		Source:              ccsrc,
 	}
 
-	proposal, err := createProposal(args, signer, approveFuncName, channelID)
+	proposal, txID, err := createProposal(args, signer, approveFuncName, channelID)
 	if err != nil {
 		return nil, fmt.Errorf("crate proposal error -> %v", err)
 	}
 
-	return query(signer, proposal, peers)
+	return invoke(signer, proposal, peers, orderers, channelID, txID)
+}
+
+// ApproveForMyOrg2 to ApproveForMyOrg
+func ApproveForMyOrg2(
+	chainOpt chaincode.ChainOpt,
+	mspOpt chaincode.MSPOpt,
+	channelID string,
+	peers []chaincode.Endpoint2,
+	orderers []chaincode.Endpoint2,
+) (*peer.ProposalResponse, error) {
+	p, err := chaincode.Endpoint2sToEndpoints(peers)
+	if err != nil {
+		return nil, fmt.Errorf("peers' endpoint2s to endpoints error -> %v", err)
+	}
+	o, err := chaincode.Endpoint2sToEndpoints(orderers)
+	if err != nil {
+		return nil, fmt.Errorf("orderers' endpoint2s to endpoint error -> %v", err)
+	}
+	return ApproveForMyOrg(chainOpt, mspOpt, channelID, p, o)
 }
 
 /**

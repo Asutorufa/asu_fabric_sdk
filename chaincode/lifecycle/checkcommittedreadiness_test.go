@@ -6,24 +6,23 @@ import (
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
 	"github.com/gogo/protobuf/proto"
-	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 )
 
 func TestCheckCommittedReadiness(t *testing.T) {
 	resp, err := CheckCommittedReadiness2(
 		chaincode.ChainOpt{
-			Path:              "assetTransfer",
-			Name:              "basic",
-			IsInit:            true,
-			Version:           "1.0",
-			PackageID:         "basic_1.0:4ec191e793b27e953ff2ede5a8bcc63152cecb1e4c3f301a26e22692c61967ad",
-			Sequence:          2,
-			EndorsementPlugin: "escc",
-			ValidationPlugin:  "vscc",
-			Policy:            "OR('Org1MSP.member')",
-			Type:              peer.ChaincodeSpec_GOLANG,
-			CollectionConfig:  "",
+			// Path:      "assetTransfer",
+			Name: "basic",
+			// IsInit:    true,
+			// Version:   "1.0",
+			// PackageID: "basic_1.0:4ec191e793b27e953ff2ede5a8bcc63152cecb1e4c3f301a26e22692c61967ad",
+			Sequence: 2,
+			// EndorsementPlugin: "escc",
+			// ValidationPlugin:  "vscc",
+			Policy: "OR('Org1MSP.member')",
+			// Type:             peer.ChaincodeSpec_GOLANG,
+			// CollectionConfig: "",
 		},
 		chaincode.MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",

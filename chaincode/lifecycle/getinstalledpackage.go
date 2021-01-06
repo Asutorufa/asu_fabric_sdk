@@ -6,7 +6,8 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 )
 
-// GetInstalledPackage chainOpt just need PackageID
+// GetInstalledPackage get installed package
+// chainOpt just need PackageID
 func GetInstalledPackage(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
@@ -19,7 +20,7 @@ func GetInstalledPackage(
 
 	function := "GetInstalledChaincodePackage"
 
-	proposal, err := createProposal(args, signer, function, "")
+	proposal, _, err := createProposal(args, signer, function, "")
 	if err != nil {
 
 	}

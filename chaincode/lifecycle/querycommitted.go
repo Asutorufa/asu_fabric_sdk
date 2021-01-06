@@ -7,9 +7,10 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 )
 
+// QueryCommitted query committed
+// chainOpt optional: all
 func QueryCommitted(
 	chainOpt chaincode.ChainOpt,
-	//peerGrpcTLSOpt GrpcTLSOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
 	peer []chaincode.Endpoint,
@@ -31,7 +32,7 @@ func QueryCommitted(
 		return nil, err
 	}
 
-	proposal, err := createProposal(args, signer, function, channelID)
+	proposal, _, err := createProposal(args, signer, function, channelID)
 	if err != nil {
 		return nil, err
 	}

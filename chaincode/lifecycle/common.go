@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
@@ -141,6 +142,7 @@ func invoke(
 	peers []chaincode.Endpoint,
 	orderers []chaincode.Endpoint,
 	channelID string,
+	txID string,
 ) (*peer.ProposalResponse, error) {
 	resp, err := queryAll(signer, proposal, peers)
 	if err != nil {
@@ -195,21 +197,22 @@ func invoke(
 	}
 
 	for _, orderer := range orderers {
-		txid := ""
 		dg := chaincode.NewDeliverGroup(
 			deliverClients,
 			eps,
 			signer,
 			certificate,
 			channelID,
-			txid,
+			txID,
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 		err = dg.Connect(ctx)
 		if err != nil {
-			return nil, err
+			// return nil, err
+			log.Println(err)
+			continue
 		}
 
 		order, err := orderclient.NewOrdererClient(
@@ -220,27 +223,36 @@ func invoke(
 			clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
-			return nil, err
+			// return nil, err
+			log.Println(err)
+			continue
 		}
 		defer order.Close()
 		ordererClient, err := order.Broadcast()
 		if err != nil {
-			return nil, err
+			// return nil, err
+			log.Println(err)
+			continue
 		}
 		err = ordererClient.Send(env)
 		if err != nil {
-			return nil, err
+			// return nil, err
+			log.Println(err)
+			continue
 		}
 
 		if dg != nil && ctx != nil {
 			err = dg.Wait(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("dg.Wait() -> %v", err)
+				// return nil, fmt.Errorf("dg.Wait() -> %v", err)
+				log.Printf("dg.Wait() -> %v\n", err)
+				continue
 			}
 		}
+		return resp[0], nil
 	}
 
-	return nil, nil
+	return nil, fmt.Errorf("failed send envelop to all orderers")
 }
 
 func signProposal(proposal *peer.Proposal, signer msp.SigningIdentity) (*peer.SignedProposal, error) {
@@ -269,10 +281,10 @@ func signProposal(proposal *peer.Proposal, signer msp.SigningIdentity) (*peer.Si
 	}, nil
 }
 
-func createProposal(args proto.Message, signer msp.SigningIdentity, function, channel string) (*peer.Proposal, error) {
+func createProposal(args proto.Message, signer msp.SigningIdentity, function, channel string) (*peer.Proposal, string, error) {
 	argsBytes, err := proto.Marshal(args)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal args")
+		return nil, "", errors.Wrap(err, "failed to marshal args")
 	}
 	ccInput := &peer.ChaincodeInput{Args: [][]byte{[]byte(function), argsBytes}}
 
@@ -285,13 +297,13 @@ func createProposal(args proto.Message, signer msp.SigningIdentity, function, ch
 
 	signerSerialized, err := signer.Serialize()
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to serialize identity")
+		return nil, "", errors.WithMessage(err, "failed to serialize identity")
 	}
 
-	proposal, _, err := protoutil.CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, channel, cis, signerSerialized)
+	proposal, txID, err := protoutil.CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, channel, cis, signerSerialized)
 	if err != nil {
-		return nil, errors.WithMessage(err, "failed to create ChaincodeInvocationSpec proposal")
+		return nil, "", errors.WithMessage(err, "failed to create ChaincodeInvocationSpec proposal")
 	}
 
-	return proposal, nil
+	return proposal, txID, nil
 }

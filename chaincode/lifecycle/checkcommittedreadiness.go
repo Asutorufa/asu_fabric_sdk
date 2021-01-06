@@ -13,19 +13,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func CheckCommittedReadiness2(
-	chainOpt chaincode.ChainOpt,
-	mspOpt chaincode.MSPOpt,
-	channelID string,
-	peer []chaincode.Endpoint2,
-) (*peer.ProposalResponse, error) {
-	ep, err := chaincode.Endpoint2sToEndpoints(peer)
-	if err != nil {
-		return nil, err
-	}
-	return CheckCommittedReadiness(chainOpt, mspOpt, channelID, ep)
-}
-
+// CheckCommittedReadiness check committed read readiness
+// chainOpt need: Name, Sequence, Policy, optional: others
 func CheckCommittedReadiness(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
@@ -66,7 +55,7 @@ func CheckCommittedReadiness(
 		return nil, err
 	}
 
-	proposal, err := createProposal(args, signer, checkCommitReadinessFuncName, channelID)
+	proposal, _, err := createProposal(args, signer, checkCommitReadinessFuncName, channelID)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +66,20 @@ func CheckCommittedReadiness(
 	}
 
 	return resp, nil
+}
+
+// CheckCommittedReadiness2 to CheckCommittedReadiness
+func CheckCommittedReadiness2(
+	chainOpt chaincode.ChainOpt,
+	mspOpt chaincode.MSPOpt,
+	channelID string,
+	peer []chaincode.Endpoint2,
+) (*peer.ProposalResponse, error) {
+	ep, err := chaincode.Endpoint2sToEndpoints(peer)
+	if err != nil {
+		return nil, err
+	}
+	return CheckCommittedReadiness(chainOpt, mspOpt, channelID, ep)
 }
 
 //[
