@@ -96,6 +96,7 @@ func Commit(
 	return invoke(signer, proposal, peers, orderers, channelID, txID)
 }
 
+// Commit2 to Commit
 func Commit2(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,

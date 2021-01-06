@@ -27,7 +27,6 @@ const (
 )
 
 func query(
-	//peerGrpcOpt GrpcTLSOpt,
 	signer msp.SigningIdentity,
 	proposal *peer.Proposal,
 	peers []chaincode.Endpoint,
@@ -82,7 +81,6 @@ func query(
 }
 
 func queryAll(
-	//peerGrpcOpt GrpcTLSOpt,
 	signer msp.SigningIdentity,
 	proposal *peer.Proposal,
 	peers []chaincode.Endpoint,

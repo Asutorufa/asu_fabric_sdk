@@ -3,6 +3,7 @@ package chaincode
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"sync"
@@ -10,10 +11,13 @@ import (
 
 	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
+	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 
 	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/bccsp/factory"
+	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/msp/mgmt"
 )
@@ -83,6 +87,7 @@ func getChaincodeInvocationSpec(
 type ChainOpt struct {
 	Path                string
 	Name                string
+	Label               string
 	IsInit              bool
 	Version             string
 	PackageID           string
@@ -91,8 +96,8 @@ type ChainOpt struct {
 	ValidationPlugin    string
 	ValidationParameter []byte
 	Policy              string
-	CollectionConfig    string
-	CollectionsConfig   []PrivateDataCollectionConfig
+	// CollectionConfig    string
+	CollectionsConfig []PrivateDataCollectionConfig
 	// 详见: https://hyperledger-fabric.readthedocs.io/en/release-2.2/private_data_tutorial.html
 	Type peer.ChaincodeSpec_Type
 }
@@ -272,4 +277,101 @@ func GetCertificate(peer *peerclient.PeerClient) tls.Certificate {
 
 func GetBroadcastClient(order *orderclient.OrdererClient) (orderer.AtomicBroadcast_BroadcastClient, error) {
 	return order.Broadcast()
+}
+
+type collectionConfigJson struct {
+	Name              string `json:"name"`
+	Policy            string `json:"policy"`
+	RequiredPeerCount *int32 `json:"requiredPeerCount"`
+	MaxPeerCount      *int32 `json:"maxPeerCount"`
+	BlockToLive       uint64 `json:"blockToLive"`
+	MemberOnlyRead    bool   `json:"memberOnlyRead"`
+	MemberOnlyWrite   bool   `json:"memberOnlyWrite"`
+	EndorsementPolicy *struct {
+		SignaturePolicy     string `json:"signaturePolicy"`
+		ChannelConfigPolicy string `json:"channelConfigPolicy"`
+	} `json:"endorsementPolicy"`
+}
+
+// getCollectionConfig retrieves the collection configuration
+// from the supplied byte array; the byte array must contain a
+// json-formatted array of collectionConfigJson elements
+func getCollectionConfigFromBytes(cconfBytes []byte) (*peer.CollectionConfigPackage, []byte, error) {
+	cconf := &[]collectionConfigJson{}
+	err := json.Unmarshal(cconfBytes, cconf)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "could not parse the collection configuration")
+	}
+
+	ccarray := make([]*peer.CollectionConfig, 0, len(*cconf))
+	for _, cconfitem := range *cconf {
+		p, err := policydsl.FromString(cconfitem.Policy)
+		if err != nil {
+			return nil, nil, errors.WithMessagef(err, "invalid policy %s", cconfitem.Policy)
+		}
+
+		cpc := &peer.CollectionPolicyConfig{
+			Payload: &peer.CollectionPolicyConfig_SignaturePolicy{
+				SignaturePolicy: p,
+			},
+		}
+
+		var ep *peer.ApplicationPolicy
+		if cconfitem.EndorsementPolicy != nil {
+			signaturePolicy := cconfitem.EndorsementPolicy.SignaturePolicy
+			channelConfigPolicy := cconfitem.EndorsementPolicy.ChannelConfigPolicy
+			if (signaturePolicy != "" && channelConfigPolicy != "") || (signaturePolicy == "" && channelConfigPolicy == "") {
+				return nil, nil, fmt.Errorf("incorrect policy")
+			}
+
+			if signaturePolicy != "" {
+				poli, err := policydsl.FromString(signaturePolicy)
+				if err != nil {
+					return nil, nil, err
+				}
+				ep = &peer.ApplicationPolicy{
+					Type: &peer.ApplicationPolicy_SignaturePolicy{
+						SignaturePolicy: poli,
+					},
+				}
+			} else {
+				ep = &peer.ApplicationPolicy{
+					Type: &peer.ApplicationPolicy_ChannelConfigPolicyReference{
+						ChannelConfigPolicyReference: channelConfigPolicy,
+					},
+				}
+			}
+		}
+
+		// Set default requiredPeerCount and MaxPeerCount if not specified in json
+		requiredPeerCount := int32(0)
+		maxPeerCount := int32(1)
+		if cconfitem.RequiredPeerCount != nil {
+			requiredPeerCount = *cconfitem.RequiredPeerCount
+		}
+		if cconfitem.MaxPeerCount != nil {
+			maxPeerCount = *cconfitem.MaxPeerCount
+		}
+
+		cc := &peer.CollectionConfig{
+			Payload: &peer.CollectionConfig_StaticCollectionConfig{
+				StaticCollectionConfig: &peer.StaticCollectionConfig{
+					Name:              cconfitem.Name,
+					MemberOrgsPolicy:  cpc,
+					RequiredPeerCount: requiredPeerCount,
+					MaximumPeerCount:  maxPeerCount,
+					BlockToLive:       cconfitem.BlockToLive,
+					MemberOnlyRead:    cconfitem.MemberOnlyRead,
+					MemberOnlyWrite:   cconfitem.MemberOnlyWrite,
+					EndorsementPolicy: ep,
+				},
+			},
+		}
+
+		ccarray = append(ccarray, cc)
+	}
+
+	ccp := &peer.CollectionConfigPackage{Config: ccarray}
+	ccpBytes, err := proto.Marshal(ccp)
+	return ccp, ccpBytes, err
 }
