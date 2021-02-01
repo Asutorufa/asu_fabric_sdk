@@ -129,7 +129,7 @@ func Invoke(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
+			clientcommon.WithTLS(peers[index].GrpcTLSOpt.Ca),
 			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
@@ -199,7 +199,7 @@ func Invoke(
 		orderer.Address,
 		orderer.GrpcTLSOpt.ServerNameOverride,
 		clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
-		clientcommon.WithTLS2(orderer.GrpcTLSOpt.Ca),
+		clientcommon.WithTLS(orderer.GrpcTLSOpt.Ca),
 		clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 	)
 	if err != nil {

@@ -19,16 +19,16 @@ func WithTimeout(duration time.Duration) func(client *grpcclient.ClientConfig) {
 	}
 }
 
-func WithTLS(caPEMPath string) func(client *grpcclient.ClientConfig) {
+func WithTLS2(caPEMPath string) func(client *grpcclient.ClientConfig) {
 	data, err := ioutil.ReadFile(caPEMPath)
 	if err != nil {
 		log.Printf("caPEM read error, set to false -> %v\n", err)
 		return func(client *grpcclient.ClientConfig) {}
 	}
-	return WithTLS2(data)
+	return WithTLS(data)
 }
 
-func WithTLS2(caPEM []byte) func(client *grpcclient.ClientConfig) {
+func WithTLS(caPEM []byte) func(client *grpcclient.ClientConfig) {
 	return func(client *grpcclient.ClientConfig) {
 		client.SecOpts.UseTLS = true
 		client.SecOpts.ServerRootCAs = [][]byte{caPEM}

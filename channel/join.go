@@ -60,7 +60,7 @@ func Join(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, genesisBlock []byte
 	peerClient, err := peerclient.NewPeerClient(
 		peers.Address,
 		peers.ServerNameOverride,
-		clientcommon.WithTLS(string(peers.Ca)),
+		clientcommon.WithTLS(peers.Ca),
 		clientcommon.WithClientCert(peers.ClientKey, peers.ClientCrt),
 		clientcommon.WithTimeout(peers.Timeout),
 	)

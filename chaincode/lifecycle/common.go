@@ -36,7 +36,7 @@ func peerInvoke(
 			peer.Address,
 			peer.ServerNameOverride,
 			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
-			clientcommon.WithTLS2(peer.Ca),
+			clientcommon.WithTLS(peer.Ca),
 			clientcommon.WithTimeout(6*time.Second),
 		)
 		if err != nil {
@@ -89,7 +89,7 @@ func query(
 			peer.Address,
 			peer.ServerNameOverride,
 			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
-			clientcommon.WithTLS2(peer.Ca),
+			clientcommon.WithTLS(peer.Ca),
 			clientcommon.WithTimeout(6*time.Second),
 		)
 		if err != nil {
@@ -142,7 +142,7 @@ func queryAll(
 			peer.Address,
 			peer.ServerNameOverride,
 			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
-			clientcommon.WithTLS2(peer.Ca),
+			clientcommon.WithTLS(peer.Ca),
 			clientcommon.WithTimeout(6*time.Second),
 		)
 		if err != nil {
@@ -209,7 +209,7 @@ func invoke(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
+			clientcommon.WithTLS(peers[index].GrpcTLSOpt.Ca),
 			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
@@ -262,7 +262,7 @@ func invoke(
 			orderer.Address,
 			orderer.GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
-			clientcommon.WithTLS2(orderer.GrpcTLSOpt.Ca),
+			clientcommon.WithTLS(orderer.GrpcTLSOpt.Ca),
 			clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 		)
 		if err != nil {

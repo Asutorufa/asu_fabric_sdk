@@ -102,7 +102,7 @@ func Query(
 		peerClient, err := peerclient.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
-			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
+			clientcommon.WithTLS(peers[index].GrpcTLSOpt.Ca),
 			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
 			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
