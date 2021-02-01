@@ -26,12 +26,58 @@ const (
 	checkCommitReadinessFuncName = "CheckCommitReadiness"
 )
 
+func peerInvoke(
+	peers []chaincode.Endpoint,
+	signedProposal *peer.SignedProposal,
+) ([]*peer.ProposalResponse, error) {
+	var resps []*peer.ProposalResponse
+	for _, peer := range peers {
+		peerClient, err := peerclient.NewPeerClient(
+			peer.Address,
+			peer.ServerNameOverride,
+			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
+			clientcommon.WithTLS2(peer.Ca),
+			clientcommon.WithTimeout(6*time.Second),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		endorserClient, err := peerClient.Endorser()
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := endorserClient.ProcessProposal(context.Background(), signedProposal)
+		if err != nil {
+			return nil, err
+		}
+
+		resps = append(resps, resp)
+	}
+
+	if len(resps) == 0 {
+		return nil, fmt.Errorf("all peers response is empty")
+	}
+
+	resp := resps[0]
+
+	if resp == nil {
+		return nil, fmt.Errorf("resp is nil")
+	}
+
+	if resp.Response.Status != int32(common.Status_SUCCESS) {
+		return nil, fmt.Errorf("%d - %s", resp.Response.Status, resp.Response.Message)
+	}
+
+	return resps, nil
+}
+
 func query(
 	signer msp.SigningIdentity,
 	proposal *peer.Proposal,
 	peers []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
-
 	signedProposal, err := signProposal(proposal, signer)
 	if err != nil {
 		return nil, err
@@ -42,7 +88,7 @@ func query(
 		peerClient, err := peerclient.NewPeerClient(
 			peer.Address,
 			peer.ServerNameOverride,
-			clientcommon.WithClientCert2(peer.ClientKey, peer.ClientCrt),
+			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
 			clientcommon.WithTLS2(peer.Ca),
 			clientcommon.WithTimeout(6*time.Second),
 		)
@@ -85,7 +131,6 @@ func queryAll(
 	proposal *peer.Proposal,
 	peers []chaincode.Endpoint,
 ) ([]*peer.ProposalResponse, error) {
-
 	signedProposal, err := signProposal(proposal, signer)
 	if err != nil {
 		return nil, err
@@ -96,7 +141,7 @@ func queryAll(
 		peerClient, err := peerclient.NewPeerClient(
 			peer.Address,
 			peer.ServerNameOverride,
-			clientcommon.WithClientCert2(peer.ClientKey, peer.ClientCrt),
+			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
 			clientcommon.WithTLS2(peer.Ca),
 			clientcommon.WithTimeout(6*time.Second),
 		)
@@ -163,7 +208,7 @@ func invoke(
 		peerClient, err := peerclient.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
-			clientcommon.WithClientCert2(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
 			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
 			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
@@ -194,16 +239,16 @@ func invoke(
 		eps = append(eps, peers[index].Address)
 	}
 
-	for _, orderer := range orderers {
-		dg := chaincode.NewDeliverGroup(
-			deliverClients,
-			eps,
-			signer,
-			certificate,
-			channelID,
-			txID,
-		)
+	dg := chaincode.NewDeliverGroup(
+		deliverClients,
+		eps,
+		signer,
+		certificate,
+		channelID,
+		txID,
+	)
 
+	for _, orderer := range orderers {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
 		err = dg.Connect(ctx)
@@ -216,7 +261,7 @@ func invoke(
 		order, err := orderclient.NewOrdererClient(
 			orderer.Address,
 			orderer.GrpcTLSOpt.ServerNameOverride,
-			clientcommon.WithClientCert2(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
+			clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
 			clientcommon.WithTLS2(orderer.GrpcTLSOpt.Ca),
 			clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 		)
@@ -279,7 +324,11 @@ func signProposal(proposal *peer.Proposal, signer msp.SigningIdentity) (*peer.Si
 	}, nil
 }
 
-func createProposal(args proto.Message, signer msp.SigningIdentity, function, channel string) (*peer.Proposal, string, error) {
+func createProposal(
+	args proto.Message,
+	signer msp.SigningIdentity,
+	function, channel string,
+) (*peer.Proposal, string, error) {
 	argsBytes, err := proto.Marshal(args)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "failed to marshal args")

@@ -79,6 +79,7 @@ func Package(
 	return payload.Bytes(), err
 }
 
+// Package2 to Package
 func Package2(
 	chainOpt chaincode.ChainOpt,
 	outPutFile string,
@@ -91,6 +92,7 @@ func Package2(
 	return ioutil.WriteFile(outPutFile, data, os.ModePerm)
 }
 
+// NormalizePath get path for different language chaincode
 func NormalizePath(tYPE peer.ChaincodeSpec_Type, path string) (string, error) {
 	switch tYPE {
 	case peer.ChaincodeSpec_GOLANG:
@@ -103,6 +105,7 @@ func NormalizePath(tYPE peer.ChaincodeSpec_Type, path string) (string, error) {
 	return path, nil
 }
 
+// GetDeploymentPayload get chaincode data from path for different language chaincode
 func GetDeploymentPayload(tYPE peer.ChaincodeSpec_Type, path string) ([]byte, error) {
 	switch tYPE {
 	case peer.ChaincodeSpec_GOLANG:

@@ -18,7 +18,6 @@ func Commit(
 	peers []chaincode.Endpoint,
 	orderers []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
-
 	var collections *peer.CollectionConfigPackage
 	for i := range chainOpt.CollectionsConfig {
 		var ep *peer.ApplicationPolicy

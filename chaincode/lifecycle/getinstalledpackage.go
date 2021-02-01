@@ -1,6 +1,8 @@
 package lifecycle
 
 import (
+	"fmt"
+
 	"github.com/Asutorufa/fabricsdk/chaincode"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric-protos-go/peer/lifecycle"
@@ -22,7 +24,7 @@ func GetInstalledPackage(
 
 	proposal, _, err := createProposal(args, signer, function, "")
 	if err != nil {
-
+		return nil, fmt.Errorf("create proposal error -> %v", err)
 	}
 
 	return query(signer, proposal, peer)

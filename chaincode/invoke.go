@@ -128,7 +128,7 @@ func Invoke(
 		peerClient, err := peerclient.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
-			clientcommon.WithClientCert2(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
 			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
 			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
@@ -198,7 +198,7 @@ func Invoke(
 	order, err := orderclient.NewOrdererClient(
 		orderer.Address,
 		orderer.GrpcTLSOpt.ServerNameOverride,
-		clientcommon.WithClientCert2(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
+		clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
 		clientcommon.WithTLS2(orderer.GrpcTLSOpt.Ca),
 		clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 	)

@@ -35,7 +35,7 @@ func WithTLS2(caPEM []byte) func(client *grpcclient.ClientConfig) {
 	}
 }
 
-func WithClientCert(keyPEMPath, certPEMPath string) func(client *grpcclient.ClientConfig) {
+func WithClientCert2(keyPEMPath, certPEMPath string) func(client *grpcclient.ClientConfig) {
 	key, err := ioutil.ReadFile(keyPEMPath)
 	if err != nil {
 		log.Printf("client key read error, set to false -> %v\n", err)
@@ -46,10 +46,10 @@ func WithClientCert(keyPEMPath, certPEMPath string) func(client *grpcclient.Clie
 		log.Printf("client key read error, set to false -> %v\n", err)
 		return func(client *grpcclient.ClientConfig) {}
 	}
-	return WithClientCert2(key, cert)
+	return WithClientCert(key, cert)
 }
 
-func WithClientCert2(keyPEM, certPEM []byte) func(client *grpcclient.ClientConfig) {
+func WithClientCert(keyPEM, certPEM []byte) func(client *grpcclient.ClientConfig) {
 	return func(client *grpcclient.ClientConfig) {
 		client.SecOpts.RequireClientCert = true
 		client.SecOpts.Key = keyPEM

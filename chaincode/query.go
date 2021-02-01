@@ -103,7 +103,7 @@ func Query(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithTLS2(peers[index].GrpcTLSOpt.Ca),
-			clientcommon.WithClientCert2(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
 			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
