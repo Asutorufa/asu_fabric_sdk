@@ -11,13 +11,11 @@ import (
 
 //JoinBySnapshotStatus get join by snapshot status
 func JoinBySnapshotStatus(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint) (*peer.JoinBySnapshotStatus, error) {
-	spec := &peer.ChaincodeSpec{
+	resp, err := exec(mspOpt, peers, &peer.ChaincodeSpec{
 		Type:        peer.ChaincodeSpec_GOLANG,
 		ChaincodeId: &peer.ChaincodeID{Name: "cscc"},
 		Input:       &peer.ChaincodeInput{Args: [][]byte{[]byte(cscc.JoinBySnapshotStatus)}},
-	}
-
-	resp, err := exec(mspOpt, peers, spec)
+	})
 	if err != nil {
 		return nil, fmt.Errorf("exec to peer failed: %v", err)
 	}
