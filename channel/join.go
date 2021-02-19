@@ -30,10 +30,10 @@ func getJoinCCSPec(genesisBlock []byte) *peer.ChaincodeSpec {
 
 //Join join a channel
 func Join(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, genesisBlock []byte) (*peer.ProposalResponse, error) {
-	return join(mspOpt, peers, getJoinCCSPec(genesisBlock))
+	return exec(mspOpt, peers, getJoinCCSPec(genesisBlock))
 }
 
-func join(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, ccSpec *peer.ChaincodeSpec) (*peer.ProposalResponse, error) {
+func exec(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, ccSpec *peer.ChaincodeSpec) (*peer.ProposalResponse, error) {
 	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
 	if err != nil {
 		return nil, fmt.Errorf("get signer error -> %v", err)

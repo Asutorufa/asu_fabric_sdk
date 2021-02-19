@@ -8,7 +8,7 @@ import (
 
 // JoinBySnapshot join channel by snapshot
 func JoinBySnapshot(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, snapshotPath string) (*peer.ProposalResponse, error) {
-	return join(mspOpt, peers, &peer.ChaincodeSpec{
+	return exec(mspOpt, peers, &peer.ChaincodeSpec{
 		Type: peer.ChaincodeSpec_GOLANG,
 		ChaincodeId: &peer.ChaincodeID{
 			Name: "cscc",
