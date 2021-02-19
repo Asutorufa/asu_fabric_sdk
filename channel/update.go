@@ -15,7 +15,7 @@ import (
 )
 
 // Update update channel config
-func Update(channelID string, mspOpt chaincode.MSPOpt, orderers []chaincode.Endpoint, updateConfig []byte) error {
+func Update(channelID string, updateConfig []byte, mspOpt chaincode.MSPOpt, orderers []chaincode.Endpoint) error {
 	ctxEnv, err := protoutil.UnmarshalEnvelope(updateConfig)
 	if err != nil {
 		return fmt.Errorf("unmarshal envelope error -> %v", err)
