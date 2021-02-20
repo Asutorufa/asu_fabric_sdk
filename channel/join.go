@@ -5,8 +5,7 @@ import (
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
-	"github.com/Asutorufa/fabricsdk/chaincode/client"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/client"
 	pcommon "github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/core/scc/cscc"
@@ -64,9 +63,9 @@ func exec(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, ccSpec *peer.Chainc
 	peerClient, err := client.NewPeerClient(
 		peers.Address,
 		peers.ServerNameOverride,
-		clientcommon.WithTLS(peers.Ca),
-		clientcommon.WithClientCert(peers.ClientKey, peers.ClientCrt),
-		clientcommon.WithTimeout(peers.Timeout),
+		client.WithTLS(peers.Ca),
+		client.WithClientCert(peers.ClientKey, peers.ClientCrt),
+		client.WithTimeout(peers.Timeout),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get new peer [%s] client error -> %v", peers.Address, err)

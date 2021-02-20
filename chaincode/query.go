@@ -3,8 +3,7 @@ package chaincode
 import (
 	"fmt"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/client"
 
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -102,9 +101,9 @@ func Query(
 		peerClient, err := client.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
-			clientcommon.WithTLS(peers[index].GrpcTLSOpt.Ca),
-			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
+			client.WithTLS(peers[index].GrpcTLSOpt.Ca),
+			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			client.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
 			return nil, fmt.Errorf("NewPeerClient() -> %v", err)

@@ -4,8 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client/grpcclient"
-
+	"github.com/Asutorufa/fabricsdk/client/grpcclient"
 	ordererProtos "github.com/hyperledger/fabric-protos-go/orderer"
 )
 

@@ -4,8 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
-	"github.com/Asutorufa/fabricsdk/chaincode/client"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric/common/util"
@@ -16,9 +15,9 @@ func Fetch(mspOpt chaincode.MSPOpt, orderers chaincode.Endpoint, channelID strin
 	ordererClient, err := client.NewOrdererClient(
 		orderers.Address,
 		orderers.ServerNameOverride,
-		clientcommon.WithClientCert(orderers.ClientKey, orderers.ClientCrt),
-		clientcommon.WithTLS(orderers.Ca),
-		clientcommon.WithTimeout(orderers.Timeout),
+		client.WithClientCert(orderers.ClientKey, orderers.ClientCrt),
+		client.WithTLS(orderers.Ca),
+		client.WithTimeout(orderers.Timeout),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get orderer [%s] client error -> %v", orderers.Address, err)

@@ -5,8 +5,7 @@ import (
 	"log"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
-	"github.com/Asutorufa/fabricsdk/chaincode/client"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/client"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric/common/configtx"
 	"github.com/hyperledger/fabric/common/util"
@@ -34,8 +33,8 @@ func Update(channelID string, updateConfig []byte, mspOpt chaincode.MSPOpt, orde
 		ordererClient, err := client.NewOrdererClient(
 			orderers[oi].Address,
 			orderers[oi].ServerNameOverride,
-			clientcommon.WithClientCert(orderers[oi].ClientKey, orderers[oi].ClientCrt),
-			clientcommon.WithTLS(orderers[oi].Ca),
+			client.WithClientCert(orderers[oi].ClientKey, orderers[oi].ClientCrt),
+			client.WithTLS(orderers[oi].Ca),
 		)
 		if err != nil {
 			log.Printf("initialize new orderer [%s] client error -> %v\n", orderers[oi].Address, err)

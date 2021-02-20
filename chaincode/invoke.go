@@ -9,8 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
+	"github.com/Asutorufa/fabricsdk/client"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/common"
@@ -127,9 +126,9 @@ func Invoke(
 		peerClient, err := client.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
-			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			clientcommon.WithTLS(peers[index].GrpcTLSOpt.Ca),
-			clientcommon.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
+			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
+			client.WithTLS(peers[index].GrpcTLSOpt.Ca),
+			client.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
 			return nil, err
@@ -197,9 +196,9 @@ func Invoke(
 	order, err := client.NewOrdererClient(
 		orderer.Address,
 		orderer.GrpcTLSOpt.ServerNameOverride,
-		clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
-		clientcommon.WithTLS(orderer.GrpcTLSOpt.Ca),
-		clientcommon.WithTimeout(orderer.GrpcTLSOpt.Timeout),
+		client.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
+		client.WithTLS(orderer.GrpcTLSOpt.Ca),
+		client.WithTimeout(orderer.GrpcTLSOpt.Timeout),
 	)
 	if err != nil {
 		return nil, err

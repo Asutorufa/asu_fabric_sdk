@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client/grpcclient"
+	"github.com/Asutorufa/fabricsdk/client/grpcclient"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

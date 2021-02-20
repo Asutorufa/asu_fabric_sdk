@@ -1,11 +1,11 @@
-package clientcommon
+package client
 
 import (
 	"io/ioutil"
 	"log"
 	"time"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client/grpcclient"
+	"github.com/Asutorufa/fabricsdk/client/grpcclient"
 )
 
 func WithTimeout(duration time.Duration) func(client *grpcclient.ClientConfig) {

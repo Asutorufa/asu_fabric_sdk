@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client"
+	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
