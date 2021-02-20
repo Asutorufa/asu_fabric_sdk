@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"sync"
 	"time"
@@ -123,7 +124,7 @@ func Invoke(
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
 	for index := range peers {
-		peerClient, err := client.NewPeerClient(
+		peerClient, err := client.NewPeerClientSelf(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
@@ -193,7 +194,7 @@ func Invoke(
 		return nil, err
 	}
 
-	order, err := client.NewOrdererClient(
+	order, err := client.NewOrdererClientSelf(
 		orderer.Address,
 		orderer.GrpcTLSOpt.ServerNameOverride,
 		client.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
@@ -313,7 +314,7 @@ func (dg *DeliverGroup) ClientConnect(ctx context.Context, dc *DeliverClient) {
 	defer dg.wg.Done()
 	df, err := dc.Client.DeliverFiltered(ctx)
 	if err != nil {
-		//err = errors.WithMessagef(err, "error connecting to deliver filtered at %s", dc.Address)
+		err = fmt.Errorf("%v error connecting to deliver filtered at %s", err, dc.Address)
 		dg.setError(err)
 		return
 	}
@@ -323,7 +324,7 @@ func (dg *DeliverGroup) ClientConnect(ctx context.Context, dc *DeliverClient) {
 	envelope := createDeliverEnvelope(dg.ChannelID, dg.Certificate, dg.Signer)
 	err = df.Send(envelope)
 	if err != nil {
-		//err = errors.WithMessagef(err, "error sending deliver seek info envelope to %s", dc.Address)
+		err = fmt.Errorf("%v error sending deliver seek info envelope to %s", err, dc.Address)
 		dg.setError(err)
 		return
 	}
@@ -364,7 +365,7 @@ func (dg *DeliverGroup) ClientWait(dc *DeliverClient) {
 	for {
 		resp, err := dc.Connection.Recv()
 		if err != nil {
-			//err = errors.WithMessagef(err, "error receiving from deliver filtered at %s", dc.Address)
+			err = fmt.Errorf("%v error receiving from deliver filtered at %s", err, dc.Address)
 			dg.setError(err)
 			return
 		}
@@ -375,18 +376,18 @@ func (dg *DeliverGroup) ClientWait(dc *DeliverClient) {
 				if tx.Txid == dg.TxID {
 					//logger.Infof("txid [%s] committed with status (%s) at %s", dg.TxID, tx.TxValidationCode, dc.Address)
 					if tx.TxValidationCode != peer.TxValidationCode_VALID {
-						//err = errors.Errorf("transaction invalidated with status (%s)", tx.TxValidationCode)
+						err = fmt.Errorf("transaction invalidated with status (%s)", tx.TxValidationCode)
 						dg.setError(err)
 					}
 					return
 				}
 			}
 		case *peer.DeliverResponse_Status:
-			//err = errors.Errorf("deliver completed with status (%s) before txid received", r.Status)
+			err = fmt.Errorf("deliver completed with status (%s) before txid received", r.Status)
 			dg.setError(err)
 			return
 		default:
-			//err = errors.Errorf("received unexpected response type (%T) from %s", r, dc.Address)
+			err = fmt.Errorf("received unexpected response type (%T) from %s", r, dc.Address)
 			dg.setError(err)
 			return
 		}
@@ -448,7 +449,7 @@ func createDeliverEnvelope(
 		tlsCertHash,
 	)
 	if err != nil {
-		//logger.Errorf("Error signing envelope: %s", err)
+		log.Printf("Error signing envelope: %s\n", err)
 		return nil
 	}
 

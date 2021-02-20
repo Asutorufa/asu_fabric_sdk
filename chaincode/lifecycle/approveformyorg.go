@@ -24,11 +24,11 @@ func ApproveForMyOrg(
 	}
 
 	var ccsrc *lb.ChaincodeSource
-	if chainOpt.PackageID == "" {
+	if chainOpt.PackageID != "" {
 		ccsrc = &lb.ChaincodeSource{
 			Type: &lb.ChaincodeSource_LocalPackage{
 				LocalPackage: &lb.ChaincodeSource_Local{
-					PackageId: "",
+					PackageId: chainOpt.PackageID,
 				},
 			},
 		}

@@ -46,3 +46,41 @@ func TestInstall(t *testing.T) {
 
 	t.Log(x)
 }
+
+func TestInstall2(t *testing.T) {
+	resp, err := Install2(
+		chaincode.ChainOpt{ // this chaincode package must use lifecycle package
+			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/basic.tar.gz",
+		},
+		chaincode.MSPOpt{
+			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp",
+			Id:   "Org2MSP",
+		},
+		[]chaincode.Endpoint2{
+			{
+				Address: "127.0.0.1:9051",
+				GrpcTLSOpt2: chaincode.GrpcTLSOpt2{
+					ClientCrtPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.crt",
+					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.key",
+					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/ca.crt",
+					ServerNameOverride: "peer0.org2.example.com",
+					Timeout:            6 * time.Second,
+				},
+			},
+		},
+	)
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	x := &lifecycle.InstallChaincodeResult{}
+	err = proto.Unmarshal(resp.Payload, x)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	t.Log(x)
+}

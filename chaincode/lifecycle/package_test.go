@@ -12,7 +12,7 @@ func TestPackage(t *testing.T) {
 		Package2(chaincode.ChainOpt{
 			Path:  "/mnt/shareSSD/code/Fabric/first/blockchainsTest/",
 			Type:  peer.ChaincodeSpec_GOLANG,
-			Label: "Test Package",
-		}, "/mnt/shareSSD/code/Fabric/first/test.tar.gz"),
+			Label: "basic", // label 不能有特殊字符 不然会安装失败
+		}, "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/basic.tar.gz"),
 	)
 }

@@ -30,7 +30,7 @@ func peerInvoke(
 ) ([]*peer.ProposalResponse, error) {
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := client.NewPeerClient(
+		peerClient, err := client.NewPeerClientSelf(
 			peer.Address,
 			peer.ServerNameOverride,
 			client.WithClientCert(peer.ClientKey, peer.ClientCrt),
@@ -83,7 +83,7 @@ func query(
 
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := client.NewPeerClient(
+		peerClient, err := client.NewPeerClientSelf(
 			peer.Address,
 			peer.ServerNameOverride,
 			client.WithClientCert(peer.ClientKey, peer.ClientCrt),
@@ -136,7 +136,7 @@ func queryAll(
 
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := client.NewPeerClient(
+		peerClient, err := client.NewPeerClientSelf(
 			peer.Address,
 			peer.ServerNameOverride,
 			client.WithClientCert(peer.ClientKey, peer.ClientCrt),
@@ -203,7 +203,7 @@ func invoke(
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
 	for index := range peers {
-		peerClient, err := client.NewPeerClient(
+		peerClient, err := client.NewPeerClientSelf(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
@@ -256,7 +256,7 @@ func invoke(
 			continue
 		}
 
-		order, err := client.NewOrdererClient(
+		order, err := client.NewOrdererClientSelf(
 			orderer.Address,
 			orderer.GrpcTLSOpt.ServerNameOverride,
 			client.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),

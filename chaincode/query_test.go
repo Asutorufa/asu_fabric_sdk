@@ -66,10 +66,12 @@ func get2(t *testing.T, b [][]byte) {
 	if err != nil {
 		t.Error(err)
 	}
-	fmt.Println(resp)
-	fmt.Println(resp.Response.Status, string(resp.Response.Payload))
+	// fmt.Println(resp)
+	fmt.Println("status code:", resp.Response.Status, "Payload: -> ", string(resp.Response.Payload))
 }
 
 func TestQuery2(t *testing.T) {
-	get2(t, [][]byte{[]byte("ReadAsset"), []byte("asset1")})
+	get2(t, [][]byte{[]byte("get"), []byte("a")})
+	get2(t, [][]byte{[]byte("get2"), []byte("1")})
+	get2(t, [][]byte{[]byte("getCreator")})
 }

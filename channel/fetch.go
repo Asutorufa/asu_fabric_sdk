@@ -12,7 +12,7 @@ import (
 
 // Fetch fetch specific block from orderer
 func Fetch(mspOpt chaincode.MSPOpt, orderers chaincode.Endpoint, channelID string, blockNum uint64) (*common.Block, error) {
-	ordererClient, err := client.NewOrdererClient(
+	ordererClient, err := client.NewOrdererClientSelf(
 		orderers.Address,
 		orderers.ServerNameOverride,
 		client.WithClientCert(orderers.ClientKey, orderers.ClientCrt),
@@ -32,6 +32,7 @@ func Fetch(mspOpt chaincode.MSPOpt, orderers chaincode.Endpoint, channelID strin
 	if err != nil {
 		return nil, fmt.Errorf("get signer error -> %v", err)
 	}
+
 	var tlsCertHash []byte
 	if len(ordererClient.Certificate().Certificate) > 0 {
 		tlsCertHash = util.ComputeSHA256(ordererClient.Certificate().Certificate[0])

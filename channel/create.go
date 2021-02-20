@@ -28,7 +28,7 @@ func Create(channelID string, txFile []byte, mspOpt chaincode.MSPOpt, orderers [
 	}
 
 	for oi := range orderers {
-		oc, err := client.NewOrdererClient(
+		oc, err := client.NewOrdererClientSelf(
 			orderers[oi].Address,
 			orderers[oi].ServerNameOverride,
 			client.WithClientCert(orderers[oi].ClientKey, orderers[oi].ClientCrt),

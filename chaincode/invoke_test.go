@@ -54,7 +54,7 @@ func TestInvoke(t *testing.T) {
 	set(t, "b", "xiaoxiao2")
 }
 
-func set2(t *testing.T) {
+func set2(t *testing.T, b [][]byte) {
 	resp, err := Invoke2(
 		ChainOpt{Path: "assetTransfer", Name: "basic", IsInit: false, Version: "1.0", Type: peer.ChaincodeSpec_GOLANG},
 
@@ -62,7 +62,7 @@ func set2(t *testing.T) {
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",
 			Id:   "Org1MSP",
 		},
-		[][]byte{[]byte("InitLedger")},
+		b,
 		map[string][]byte{},
 		"mychannel",
 		[]Endpoint2{
@@ -73,6 +73,16 @@ func set2(t *testing.T) {
 					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/client.key",
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/ca.crt",
 					ServerNameOverride: "peer0.org1.example.com",
+					Timeout:            6 * time.Second,
+				},
+			},
+			{
+				Address: "127.0.0.1:9051",
+				GrpcTLSOpt2: GrpcTLSOpt2{
+					ClientCrtPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.crt",
+					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.key",
+					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/ca.crt",
+					ServerNameOverride: "peer0.org2.example.com",
 					Timeout:            6 * time.Second,
 				},
 			},
@@ -93,11 +103,12 @@ func set2(t *testing.T) {
 		t.Error(err)
 	}
 
-	t.Log(resp)
+	t.Log("state code:", resp.Response.Status, "payload: -> ", resp.Response.Payload)
 }
 
 func TestSet2(t *testing.T) {
-	set2(t)
+	set2(t, [][]byte{[]byte("set"), []byte("a"), []byte("b")})
+	set2(t, [][]byte{[]byte("set2"), []byte("1"), []byte("ざこ")})
 }
 
 func TestTSS(t *testing.T) {

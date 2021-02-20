@@ -60,7 +60,7 @@ func exec(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, ccSpec *peer.Chainc
 		return nil, fmt.Errorf("signed proposal error -> %v", err)
 	}
 
-	peerClient, err := client.NewPeerClient(
+	peerClient, err := client.NewPeerClientSelf(
 		peers.Address,
 		peers.ServerNameOverride,
 		client.WithTLS(peers.Ca),

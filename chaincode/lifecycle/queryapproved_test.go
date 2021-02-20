@@ -12,7 +12,8 @@ import (
 func TestQueryApproved(t *testing.T) {
 	resp, err := QueryApproved2(
 		chaincode.ChainOpt{
-			Name: "basic",
+			Name:      "basic",
+			PackageID: "basic:794b463b3862b555435ae30621c1dc148780186b0755e3d797a3926a44dfd9b3",
 		},
 		chaincode.MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",

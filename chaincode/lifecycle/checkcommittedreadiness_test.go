@@ -16,11 +16,11 @@ func TestCheckCommittedReadiness(t *testing.T) {
 			Name: "basic",
 			// IsInit:    true,
 			// Version:   "1.0",
-			// PackageID: "basic_1.0:4ec191e793b27e953ff2ede5a8bcc63152cecb1e4c3f301a26e22692c61967ad",
-			Sequence: 2,
+			PackageID: "basic:794b463b3862b555435ae30621c1dc148780186b0755e3d797a3926a44dfd9b3",
+			Sequence:  1,
 			// EndorsementPlugin: "escc",
 			// ValidationPlugin:  "vscc",
-			Policy: "OR('Org1MSP.member')",
+			Policy: "OR('Org1MSP.member','Org2MSP.member')",
 			// Type:             peer.ChaincodeSpec_GOLANG,
 			// CollectionConfig: "",
 		},
@@ -47,8 +47,8 @@ func TestCheckCommittedReadiness(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	t.Log(resp)
-	t.Log(resp.Response, resp.Response.Status, resp.Response.Message)
+	// t.Log(resp)
+	// t.Log(resp.Response, resp.Response.Status, resp.Response.Message)
 
 	s := lifecycle.CheckCommitReadinessResult{}
 

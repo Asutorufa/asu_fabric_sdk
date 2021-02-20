@@ -2,61 +2,18 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
 
 	"github.com/Asutorufa/fabricsdk/client/grpcclient"
 	ordererProtos "github.com/hyperledger/fabric-protos-go/orderer"
 )
 
-//
-//var (
-//	address  string // orderer_address
-//	override string // orderer_tls_serverhostoverride
-//
-//	connTimeout time.Duration // orderer_client_connTimeout
-//
-//	useTLS            bool          // orderer_tls_enabled
-//	requirtClientCert bool          // orderer_tls_clientAuthRequired
-//	timeShift         time.Duration // orderer_tls_handshakeTimeShift
-//
-//	caPEM []byte // orderer_tls_rootcert_file
-//
-//	keyPEM []byte // orderer_tls_clientKey_file
-//
-//	certPEM []byte // orderer_tls_clientCert_file
-//
-//	grpcClient *grpcclient.GRPCClient
-//)
-//
-//func init() {
-//	x := grpcclient.ClientConfig{}
-//
-//	x.SecOpts.UseTLS = useTLS
-//	x.SecOpts.RequireClientCert = requirtClientCert
-//	x.SecOpts.TimeShift = timeShift
-//
-//	if x.SecOpts.UseTLS {
-//		x.SecOpts.ServerRootCAs = [][]byte{caPEM}
-//	}
-//
-//	x.SecOpts.Key = keyPEM
-//
-//	if x.SecOpts.RequireClientCert {
-//		x.SecOpts.Certificate = certPEM
-//	}
-//
-//	var err error
-//	grpcClient, err = grpcclient.NewGRPCClient(x)
-//	if err != nil {
-//		panic(err)
-//	}
-//}
-
+//OrdererClient orderer client use grpc
 type OrdererClient struct {
 	GRPCClient *grpcclient.GRPCClient
 	Client
 }
 
+//NewOrdererClient create new orderer client
 func NewOrdererClient(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (o *OrdererClient, err error) {
 	config := &grpcclient.ClientConfig{}
 
@@ -75,8 +32,9 @@ func NewOrdererClient(address, override string, Opt ...func(config *grpcclient.C
 	return
 }
 
+//NewOrdererClientSelf create new orderer client
 func NewOrdererClientSelf(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (*OrdererClient, error) {
-	c, err := NewClinet(address, override, Opt...)
+	c, err := NewClient(address, override, Opt...)
 	if err != nil {
 		return nil, err
 	}
@@ -86,18 +44,12 @@ func NewOrdererClientSelf(address, override string, Opt ...func(config *grpcclie
 	}, nil
 }
 
+//Broadcast orderer broadcast client
 func (o *OrdererClient) Broadcast() (ordererProtos.AtomicBroadcast_BroadcastClient, error) {
 	return ordererProtos.NewAtomicBroadcastClient(o.grpcConn).Broadcast(context.TODO())
 }
 
+//Deliver orderer deliver client
 func (o *OrdererClient) Deliver() (ordererProtos.AtomicBroadcast_DeliverClient, error) {
 	return ordererProtos.NewAtomicBroadcastClient(o.grpcConn).Deliver(context.TODO())
-}
-
-func (o *OrdererClient) Certificate() tls.Certificate {
-	return o.GRPCClient.Certificate()
-}
-
-func (o *OrdererClient) Close() error {
-	return o.grpcConn.Close()
 }

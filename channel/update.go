@@ -30,7 +30,7 @@ func Update(channelID string, updateConfig []byte, mspOpt chaincode.MSPOpt, orde
 	}
 
 	for oi := range orderers {
-		ordererClient, err := client.NewOrdererClient(
+		ordererClient, err := client.NewOrdererClientSelf(
 			orderers[oi].Address,
 			orderers[oi].ServerNameOverride,
 			client.WithClientCert(orderers[oi].ClientKey, orderers[oi].ClientCrt),

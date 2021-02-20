@@ -12,7 +12,7 @@ func TestCommit(t *testing.T) {
 		chaincode.ChainOpt{
 			Name:     "basic",
 			Version:  "1.0",
-			Sequence: 2,
+			Sequence: 1,
 		},
 		chaincode.MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",
@@ -27,6 +27,16 @@ func TestCommit(t *testing.T) {
 					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/client.key",
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/ca.crt",
 					ServerNameOverride: "peer0.org1.example.com",
+					Timeout:            6 * time.Second,
+				},
+			},
+			{
+				Address: "127.0.0.1:9051",
+				GrpcTLSOpt2: chaincode.GrpcTLSOpt2{
+					ClientCrtPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.crt",
+					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.key",
+					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/ca.crt",
+					ServerNameOverride: "peer0.org2.example.com",
 					Timeout:            6 * time.Second,
 				},
 			},
@@ -50,7 +60,7 @@ func TestCommit(t *testing.T) {
 		return
 	}
 
-	t.Log(string(resp.Payload))
+	t.Log(string(resp.Response.Payload), resp.Response.Status, resp.Response.Message)
 
-	// x := &lifecycle.CommitChaincodeDefinitionResult{} -> nothing
+	// x := &lifecycle.CommitChaincodeDefinitionResult{} //-> nothing
 }

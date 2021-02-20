@@ -98,7 +98,7 @@ func Query(
 	var peerClients []*client.PeerClient
 	var endorserClients []peer.EndorserClient
 	for index := range peers {
-		peerClient, err := client.NewPeerClient(
+		peerClient, err := client.NewPeerClientSelf(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			client.WithTLS(peers[index].GrpcTLSOpt.Ca),
