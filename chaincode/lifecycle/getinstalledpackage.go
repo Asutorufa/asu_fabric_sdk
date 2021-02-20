@@ -16,6 +16,9 @@ func GetInstalledPackage(
 	peer []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
 	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	if err != nil {
+		return nil, fmt.Errorf("get signer failed: %v", err)
+	}
 	args := &lifecycle.GetInstalledChaincodePackageArgs{
 		PackageId: chainOpt.PackageID,
 	}
