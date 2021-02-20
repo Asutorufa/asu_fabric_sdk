@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric/protoutil"
 )
@@ -29,7 +29,7 @@ func Create(channelID string, txFile []byte, mspOpt chaincode.MSPOpt, orderers [
 	}
 
 	for oi := range orderers {
-		oc, err := orderclient.NewOrdererClient(
+		oc, err := client.NewOrdererClient(
 			orderers[oi].Address,
 			orderers[oi].ServerNameOverride,
 			clientcommon.WithClientCert(orderers[oi].ClientKey, orderers[oi].ClientCrt),

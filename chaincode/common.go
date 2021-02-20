@@ -9,8 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -232,11 +231,11 @@ func processProposals(endorserClients []peer.EndorserClient, signedProposal *pee
 	return responses, nil
 }
 
-func NewDeliverClient(peer *peerclient.PeerClient) (peer.DeliverClient, error) {
+func NewDeliverClient(peer *client.PeerClient) (peer.DeliverClient, error) {
 	return peer.PeerDeliver()
 }
 
-func NewEndorserClient(client *peerclient.PeerClient) (peer.EndorserClient, error) {
+func NewEndorserClient(client *client.PeerClient) (peer.EndorserClient, error) {
 	return client.Endorser()
 }
 
@@ -263,19 +262,19 @@ var (
 // tlsHandshakeTimeShift time.Duration // <- orderer_tls_handshakeTimeShift
 )
 
-func GetEndorserClient(client *peerclient.PeerClient) (peer.EndorserClient, error) {
+func GetEndorserClient(client *client.PeerClient) (peer.EndorserClient, error) {
 	return client.Endorser()
 }
 
-func GetDeliverClient(peer *peerclient.PeerClient) (peer.DeliverClient, error) {
+func GetDeliverClient(peer *client.PeerClient) (peer.DeliverClient, error) {
 	return peer.PeerDeliver()
 }
 
-func GetCertificate(peer *peerclient.PeerClient) tls.Certificate {
+func GetCertificate(peer *client.PeerClient) tls.Certificate {
 	return peer.Certificate()
 }
 
-func GetBroadcastClient(order *orderclient.OrdererClient) (orderer.AtomicBroadcast_BroadcastClient, error) {
+func GetBroadcastClient(order *client.OrdererClient) (orderer.AtomicBroadcast_BroadcastClient, error) {
 	return order.Broadcast()
 }
 

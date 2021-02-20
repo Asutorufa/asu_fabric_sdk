@@ -9,9 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/common"
@@ -120,12 +119,12 @@ func Invoke(
 		return nil, err
 	}
 
-	var peerClients []*peerclient.PeerClient
+	var peerClients []*client.PeerClient
 	var endorserClients []peer.EndorserClient
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
 	for index := range peers {
-		peerClient, err := peerclient.NewPeerClient(
+		peerClient, err := client.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
@@ -195,7 +194,7 @@ func Invoke(
 		return nil, err
 	}
 
-	order, err := orderclient.NewOrdererClient(
+	order, err := client.NewOrdererClient(
 		orderer.Address,
 		orderer.GrpcTLSOpt.ServerNameOverride,
 		clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),

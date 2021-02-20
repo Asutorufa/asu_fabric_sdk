@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric/common/util"
@@ -13,7 +13,7 @@ import (
 
 // Fetch fetch specific block from orderer
 func Fetch(mspOpt chaincode.MSPOpt, orderers chaincode.Endpoint, channelID string, blockNum uint64) (*common.Block, error) {
-	ordererClient, err := orderclient.NewOrdererClient(
+	ordererClient, err := client.NewOrdererClient(
 		orderers.Address,
 		orderers.ServerNameOverride,
 		clientcommon.WithClientCert(orderers.ClientKey, orderers.ClientCrt),

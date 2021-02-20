@@ -1,12 +1,14 @@
-package peerclient
+package client
 
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 
 	"github.com/Asutorufa/fabricsdk/chaincode/client/grpcclient"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/hyperledger/fabric-protos-go/peer"
 )
@@ -26,9 +28,13 @@ import (
 
 type PeerClient struct {
 	GrpcClient *grpcclient.GRPCClient
-	address    string
-	sn         string
-	grpcConn   *grpc.ClientConn
+	Client
+}
+
+type Client struct {
+	address  string
+	sn       string
+	grpcConn *grpc.ClientConn
 }
 
 func NewPeerClient(address, override string, Opt ...func(*grpcclient.ClientConfig)) (p *PeerClient, err error) {
@@ -49,6 +55,71 @@ func NewPeerClient(address, override string, Opt ...func(*grpcclient.ClientConfi
 	}
 	p.grpcConn, err = p.GrpcClient.NewConnection(p.address, grpcclient.ServerNameOverride(p.sn))
 	return
+}
+
+func NewPeerClientSelf(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (*PeerClient, error) {
+	c, err := NewClinet(address, override, Opt...)
+	if err != nil {
+		return nil, err
+	}
+	return &PeerClient{
+		Client: *c,
+	}, nil
+}
+
+func NewClinet(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (*Client, error) {
+	config := &grpcclient.ClientConfig{}
+
+	for oi := range Opt {
+		Opt[oi](config)
+	}
+
+	var opt []grpc.DialOption
+
+	if config.SecOpts.UseTLS || config.SecOpts.RequireClientCert {
+		c := &tls.Config{
+			ServerName: override,
+		}
+		if config.SecOpts.UseTLS {
+			certPool := x509.NewCertPool()
+			for i := range config.SecOpts.ServerRootCAs {
+				certPool.AppendCertsFromPEM(config.SecOpts.ServerRootCAs[i])
+			}
+			c.RootCAs = certPool
+		}
+
+		if config.SecOpts.RequireClientCert {
+			cert, err := tls.X509KeyPair(config.SecOpts.Certificate, config.SecOpts.Key)
+			if err != nil {
+				return nil, err
+			}
+
+			c.Certificates = append(c.Certificates, cert)
+		}
+		opt = append(opt, grpc.WithTransportCredentials(credentials.NewTLS(c)))
+	} else {
+		opt = append(opt, grpc.WithInsecure())
+	}
+
+	// TODO KeepALive
+
+	opt = append(opt, grpc.WithBlock()) // 阻塞
+	opt = append(opt, grpc.FailOnNonTempDialError(true))
+
+	ctx, cancel := context.WithTimeout(context.Background(), config.Timeout)
+	defer cancel()
+
+	grpcC, err := grpc.DialContext(ctx, address, opt...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Client{
+		address:  address,
+		sn:       override,
+		grpcConn: grpcC,
+	}, nil
+
 }
 
 // Endorser returns a client for the Endorser service

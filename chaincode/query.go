@@ -3,8 +3,8 @@ package chaincode
 import (
 	"fmt"
 
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -96,10 +96,10 @@ func Query(
 		return nil, fmt.Errorf("protoutil.GetSignedProposal() -> %v", err)
 	}
 
-	var peerClients []*peerclient.PeerClient
+	var peerClients []*client.PeerClient
 	var endorserClients []peer.EndorserClient
 	for index := range peers {
-		peerClient, err := peerclient.NewPeerClient(
+		peerClient, err := client.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithTLS(peers[index].GrpcTLSOpt.Ca),

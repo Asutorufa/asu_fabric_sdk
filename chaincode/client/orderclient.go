@@ -1,12 +1,10 @@
-package orderclient
+package client
 
 import (
 	"context"
 	"crypto/tls"
 
 	"github.com/Asutorufa/fabricsdk/chaincode/client/grpcclient"
-
-	"google.golang.org/grpc"
 
 	ordererProtos "github.com/hyperledger/fabric-protos-go/orderer"
 )
@@ -57,9 +55,7 @@ import (
 
 type OrdererClient struct {
 	GRPCClient *grpcclient.GRPCClient
-	address    string
-	sn         string
-	grpcConn   *grpc.ClientConn
+	Client
 }
 
 func NewOrdererClient(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (o *OrdererClient, err error) {
@@ -78,6 +74,17 @@ func NewOrdererClient(address, override string, Opt ...func(config *grpcclient.C
 	}
 	o.grpcConn, err = o.GRPCClient.NewConnection(o.address, grpcclient.ServerNameOverride(o.sn))
 	return
+}
+
+func NewOrdererClientSelf(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (*OrdererClient, error) {
+	c, err := NewClinet(address, override, Opt...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OrdererClient{
+		Client: *c,
+	}, nil
 }
 
 func (o *OrdererClient) Broadcast() (ordererProtos.AtomicBroadcast_BroadcastClient, error) {

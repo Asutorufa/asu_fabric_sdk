@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 	pcommon "github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/core/scc/cscc"
@@ -61,7 +61,7 @@ func exec(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, ccSpec *peer.Chainc
 		return nil, fmt.Errorf("signed proposal error -> %v", err)
 	}
 
-	peerClient, err := peerclient.NewPeerClient(
+	peerClient, err := client.NewPeerClient(
 		peers.Address,
 		peers.ServerNameOverride,
 		clientcommon.WithTLS(peers.Ca),

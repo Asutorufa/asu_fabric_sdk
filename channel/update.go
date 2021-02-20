@@ -5,8 +5,8 @@ import (
 	"log"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
 	cb "github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric/common/configtx"
 	"github.com/hyperledger/fabric/common/util"
@@ -31,7 +31,7 @@ func Update(channelID string, updateConfig []byte, mspOpt chaincode.MSPOpt, orde
 	}
 
 	for oi := range orderers {
-		ordererClient, err := orderclient.NewOrdererClient(
+		ordererClient, err := client.NewOrdererClient(
 			orderers[oi].Address,
 			orderers[oi].ServerNameOverride,
 			clientcommon.WithClientCert(orderers[oi].ClientKey, orderers[oi].ClientCrt),

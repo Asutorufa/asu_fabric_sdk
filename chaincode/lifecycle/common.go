@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
+	"github.com/Asutorufa/fabricsdk/chaincode/client"
 	"github.com/Asutorufa/fabricsdk/chaincode/client/clientcommon"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/orderclient"
-	"github.com/Asutorufa/fabricsdk/chaincode/client/peerclient"
 	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/common"
 	"github.com/hyperledger/fabric-protos-go/peer"
@@ -32,7 +31,7 @@ func peerInvoke(
 ) ([]*peer.ProposalResponse, error) {
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := peerclient.NewPeerClient(
+		peerClient, err := client.NewPeerClient(
 			peer.Address,
 			peer.ServerNameOverride,
 			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
@@ -85,7 +84,7 @@ func query(
 
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := peerclient.NewPeerClient(
+		peerClient, err := client.NewPeerClient(
 			peer.Address,
 			peer.ServerNameOverride,
 			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
@@ -138,7 +137,7 @@ func queryAll(
 
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := peerclient.NewPeerClient(
+		peerClient, err := client.NewPeerClient(
 			peer.Address,
 			peer.ServerNameOverride,
 			clientcommon.WithClientCert(peer.ClientKey, peer.ClientCrt),
@@ -200,12 +199,12 @@ func invoke(
 	//
 	//            orderers
 	//
-	var peerClients []*peerclient.PeerClient
+	var peerClients []*client.PeerClient
 	var endorserClients []peer.EndorserClient
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
 	for index := range peers {
-		peerClient, err := peerclient.NewPeerClient(
+		peerClient, err := client.NewPeerClient(
 			peers[index].Address,
 			peers[index].GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
@@ -258,7 +257,7 @@ func invoke(
 			continue
 		}
 
-		order, err := orderclient.NewOrdererClient(
+		order, err := client.NewOrdererClient(
 			orderer.Address,
 			orderer.GrpcTLSOpt.ServerNameOverride,
 			clientcommon.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
