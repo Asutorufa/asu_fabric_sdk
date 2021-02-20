@@ -118,8 +118,8 @@ type EndorsementPolicy struct {
 }
 
 type GrpcTLSOpt2 struct {
-	ClientCrtPath string
-	ClientKeyPath string
+	ClientCrtPath string // for client auth req
+	ClientKeyPath string // for client auth req
 	CaPath        string
 
 	ServerNameOverride string

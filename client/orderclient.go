@@ -9,7 +9,6 @@ import (
 
 //OrdererClient orderer client use grpc
 type OrdererClient struct {
-	GRPCClient *grpcclient.GRPCClient
 	Client
 }
 
@@ -24,11 +23,11 @@ func NewOrdererClient(address, override string, Opt ...func(config *grpcclient.C
 	o = new(OrdererClient)
 	o.address = address
 	o.sn = override
-	o.GRPCClient, err = grpcclient.NewGRPCClient(config)
+	grpcClient, err := grpcclient.NewGRPCClient(config)
 	if err != nil {
 		return nil, err
 	}
-	o.grpcConn, err = o.GRPCClient.NewConnection(o.address, grpcclient.ServerNameOverride(o.sn))
+	o.grpcConn, err = grpcClient.NewConnection(o.address, grpcclient.ServerNameOverride(o.sn))
 	return
 }
 

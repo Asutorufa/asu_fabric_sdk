@@ -60,8 +60,6 @@ func TestInstall2(t *testing.T) {
 			{
 				Address: "127.0.0.1:9051",
 				GrpcTLSOpt2: chaincode.GrpcTLSOpt2{
-					ClientCrtPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.crt",
-					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/client.key",
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/ca.crt",
 					ServerNameOverride: "peer0.org2.example.com",
 					Timeout:            6 * time.Second,

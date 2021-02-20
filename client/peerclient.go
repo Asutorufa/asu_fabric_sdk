@@ -23,7 +23,6 @@ import (
 //)
 
 type PeerClient struct {
-	GrpcClient *grpcclient.GRPCClient
 	Client
 }
 
@@ -33,17 +32,15 @@ func NewPeerClient(address, override string, Opt ...func(*grpcclient.ClientConfi
 	for index := range Opt {
 		Opt[index](config)
 	}
-	//fmt.Println(string(config.SecOpts.Certificate))
-	//fmt.Println(config.SecOpts.ServerRootCAs)
-	//fmt.Println(string(config.SecOpts.Key))
+
 	p = new(PeerClient)
 	p.address = address
 	p.sn = override
-	p.GrpcClient, err = grpcclient.NewGRPCClient(config)
+	grpcClient, err := grpcclient.NewGRPCClient(config)
 	if err != nil {
 		return nil, err
 	}
-	p.grpcConn, err = p.GrpcClient.NewConnection(p.address, grpcclient.ServerNameOverride(p.sn))
+	p.grpcConn, err = grpcClient.NewConnection(p.address, grpcclient.ServerNameOverride(p.sn))
 	return
 }
 
