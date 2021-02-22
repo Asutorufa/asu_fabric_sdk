@@ -18,9 +18,9 @@ func ApproveForMyOrg(
 	peers []chaincode.Endpoint,
 	orderers []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
-		return nil, fmt.Errorf("get signer [mspPath:%s, mspID:%s] error -> %v", mspOpt.Path, mspOpt.Id, err)
+		return nil, fmt.Errorf("get signer [mspPath:%s, mspID:%s] error -> %v", mspOpt.Path, mspOpt.ID, err)
 	}
 
 	var ccsrc *lb.ChaincodeSource
@@ -119,14 +119,14 @@ func ApproveForMyOrg2(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
-	peers []chaincode.Endpoint2,
-	orderers []chaincode.Endpoint2,
+	peers []chaincode.EndpointWithPath,
+	orderers []chaincode.EndpointWithPath,
 ) (*peer.ProposalResponse, error) {
-	p, err := chaincode.Endpoint2sToEndpoints(peers)
+	p, err := chaincode.ParseEndpointsWithPath(peers)
 	if err != nil {
 		return nil, fmt.Errorf("peers' endpoint2s to endpoints error -> %v", err)
 	}
-	o, err := chaincode.Endpoint2sToEndpoints(orderers)
+	o, err := chaincode.ParseEndpointsWithPath(orderers)
 	if err != nil {
 		return nil, fmt.Errorf("orderers' endpoint2s to endpoint error -> %v", err)
 	}

@@ -28,7 +28,7 @@ func Fetch(mspOpt chaincode.MSPOpt, orderers chaincode.Endpoint, channelID strin
 		return nil, fmt.Errorf("get orderer client deliver error -> %v", err)
 	}
 
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer error -> %v", err)
 	}

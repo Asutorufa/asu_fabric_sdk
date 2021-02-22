@@ -21,7 +21,7 @@ func Install(
 		return nil, fmt.Errorf("read chaincode package from [%s] error -> %v", chainOpt.Path, err)
 	}
 
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer error -> %v", err)
 	}
@@ -42,9 +42,9 @@ func Install(
 func Install2(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
-	peers []chaincode.Endpoint2,
+	peers []chaincode.EndpointWithPath,
 ) (*peer.ProposalResponse, error) {
-	p, err := chaincode.Endpoint2sToEndpoints(peers)
+	p, err := chaincode.ParseEndpointsWithPath(peers)
 	if err != nil {
 		return nil, fmt.Errorf("endpoint2s to endpoint error -> %v", err)
 	}

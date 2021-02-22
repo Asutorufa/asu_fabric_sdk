@@ -239,7 +239,6 @@ func invoke(
 
 	dg := chaincode.NewDeliverGroup(
 		deliverClients,
-		eps,
 		signer,
 		certificate,
 		channelID,

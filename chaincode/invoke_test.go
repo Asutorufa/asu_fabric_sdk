@@ -13,27 +13,29 @@ func set(t *testing.T, a, b string) {
 
 		MSPOpt{
 			Path: "/mnt/shareSSD/code/YunPhant/wasabi_3/src/wasabi/backEnd/conf/nfs_data/baas98/msp/baas98/peers/peer-0-baas98/msp",
-			Id:   "baas98",
+			ID:   "baas98",
 		},
 		[][]byte{[]byte("set"), []byte(a), []byte(b)},
 		map[string][]byte{},
 		"channel1",
-		[]Endpoint2{
+		[]EndpointWithPath{
 			{
 				Address: "192.168.9.196:30060",
-				GrpcTLSOpt2: GrpcTLSOpt2{
+				GrpcTLSOptWithPath: GrpcTLSOptWithPath{
 					CaPath:             "/mnt/shareSSD/code/YunPhant/wasabi_3/src/wasabi/backEnd/conf/nfs_data/baas98/msp/baas98/users/Admin@baas98/tls/ca.crt",
 					ServerNameOverride: "peer-0-baas98",
 					Timeout:            6 * time.Second,
 				},
 			},
 		},
-		Endpoint2{
-			Address: "192.168.9.196:30062",
-			GrpcTLSOpt2: GrpcTLSOpt2{
-				CaPath:             "/mnt/shareSSD/code/YunPhant/wasabi_3/src/wasabi/backEnd/conf/nfs_data/baas98/msp/baas98/users/Admin@baas98/tls/ca.crt",
-				ServerNameOverride: "orderer-0-baas98",
-				Timeout:            6 * time.Second,
+		[]EndpointWithPath{
+			{
+				Address: "192.168.9.196:30062",
+				GrpcTLSOptWithPath: GrpcTLSOptWithPath{
+					CaPath:             "/mnt/shareSSD/code/YunPhant/wasabi_3/src/wasabi/backEnd/conf/nfs_data/baas98/msp/baas98/users/Admin@baas98/tls/ca.crt",
+					ServerNameOverride: "orderer-0-baas98",
+					Timeout:            6 * time.Second,
+				},
 			},
 		},
 	)
@@ -56,15 +58,15 @@ func set2(t *testing.T, b [][]byte) {
 
 		MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",
-			Id:   "Org1MSP",
+			ID:   "Org1MSP",
 		},
 		b,
 		map[string][]byte{},
 		"mychannel",
-		[]Endpoint2{
+		[]EndpointWithPath{
 			{
 				Address: "127.0.0.1:7051",
-				GrpcTLSOpt2: GrpcTLSOpt2{
+				GrpcTLSOptWithPath: GrpcTLSOptWithPath{
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/ca.crt",
 					ServerNameOverride: "peer0.org1.example.com",
 					Timeout:            6 * time.Second,
@@ -72,19 +74,21 @@ func set2(t *testing.T, b [][]byte) {
 			},
 			{
 				Address: "127.0.0.1:9051",
-				GrpcTLSOpt2: GrpcTLSOpt2{
+				GrpcTLSOptWithPath: GrpcTLSOptWithPath{
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/ca.crt",
 					ServerNameOverride: "peer0.org2.example.com",
 					Timeout:            6 * time.Second,
 				},
 			},
 		},
-		Endpoint2{
-			Address: "127.0.0.1:7050",
-			GrpcTLSOpt2: GrpcTLSOpt2{
-				CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/tls/ca.crt",
-				ServerNameOverride: "orderer.example.com",
-				Timeout:            6 * time.Second,
+		[]EndpointWithPath{
+			{
+				Address: "127.0.0.1:7050",
+				GrpcTLSOptWithPath: GrpcTLSOptWithPath{
+					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/ordererOrganizations/example.com/users/Admin@example.com/tls/ca.crt",
+					ServerNameOverride: "orderer.example.com",
+					Timeout:            6 * time.Second,
+				},
 			},
 		},
 	)

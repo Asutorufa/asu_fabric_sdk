@@ -33,7 +33,7 @@ func Join(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, genesisBlock []byte
 }
 
 func exec(mspOpt chaincode.MSPOpt, peers chaincode.Endpoint, ccSpec *peer.ChaincodeSpec) (*peer.ProposalResponse, error) {
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer error -> %v", err)
 	}

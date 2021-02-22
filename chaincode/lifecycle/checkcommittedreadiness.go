@@ -101,7 +101,7 @@ func CheckCommittedReadiness(
 		InitRequired:        chainOpt.IsInit,
 	}
 
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,9 +124,9 @@ func CheckCommittedReadiness2(
 	chainOpt chaincode.ChainOpt,
 	mspOpt chaincode.MSPOpt,
 	channelID string,
-	peer []chaincode.Endpoint2,
+	peer []chaincode.EndpointWithPath,
 ) (*peer.ProposalResponse, error) {
-	ep, err := chaincode.Endpoint2sToEndpoints(peer)
+	ep, err := chaincode.ParseEndpointsWithPath(peer)
 	if err != nil {
 		return nil, err
 	}

@@ -16,12 +16,12 @@ func TestInstall(t *testing.T) {
 		},
 		chaincode.MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp",
-			Id:   "Org1MSP",
+			ID:   "Org1MSP",
 		},
-		[]chaincode.Endpoint2{
+		[]chaincode.EndpointWithPath{
 			{
 				Address: "127.0.0.1:7051",
-				GrpcTLSOpt2: chaincode.GrpcTLSOpt2{
+				GrpcTLSOptWithPath: chaincode.GrpcTLSOptWithPath{
 					ClientCrtPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/client.crt",
 					ClientKeyPath:      "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/client.key",
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/tls/ca.crt",
@@ -54,12 +54,12 @@ func TestInstall2(t *testing.T) {
 		},
 		chaincode.MSPOpt{
 			Path: "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp",
-			Id:   "Org2MSP",
+			ID:   "Org2MSP",
 		},
-		[]chaincode.Endpoint2{
+		[]chaincode.EndpointWithPath{
 			{
 				Address: "127.0.0.1:9051",
-				GrpcTLSOpt2: chaincode.GrpcTLSOpt2{
+				GrpcTLSOptWithPath: chaincode.GrpcTLSOptWithPath{
 					CaPath:             "/mnt/shareSSD/code/Fabric/fabric-samples/test-network/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/tls/ca.crt",
 					ServerNameOverride: "peer0.org2.example.com",
 					Timeout:            6 * time.Second,

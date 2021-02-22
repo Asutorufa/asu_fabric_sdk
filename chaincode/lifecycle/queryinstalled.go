@@ -9,9 +9,9 @@ import (
 // QueryInstalled2 query installed chaincode
 func QueryInstalled2(
 	mspOpt chaincode.MSPOpt,
-	peer []chaincode.Endpoint2,
+	peer []chaincode.EndpointWithPath,
 ) (*peer.ProposalResponse, error) {
-	ep, err := chaincode.Endpoint2sToEndpoints(peer)
+	ep, err := chaincode.ParseEndpointsWithPath(peer)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func QueryInstalled(
 	mspOpt chaincode.MSPOpt,
 	peer []chaincode.Endpoint,
 ) (*peer.ProposalResponse, error) {
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, err
 	}

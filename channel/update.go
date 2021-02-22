@@ -20,7 +20,7 @@ func Update(channelID string, updateConfig []byte, mspOpt chaincode.MSPOpt, orde
 		return fmt.Errorf("unmarshal envelope error -> %v", err)
 	}
 
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return fmt.Errorf("get msp signer error -> %v", err)
 	}

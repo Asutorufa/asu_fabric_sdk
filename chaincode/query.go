@@ -1,6 +1,8 @@
 package chaincode
 
 import (
+	"context"
+	"errors"
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/client"
@@ -11,11 +13,11 @@ import (
 )
 
 func Query2(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
-	channelID string, peers []Endpoint2) (*peer.ProposalResponse, error) {
+	channelID string, peers []EndpointWithPath) (*peer.ProposalResponse, error) {
 	var peers2 []Endpoint
 
 	for index := range peers {
-		ep, err := Endpoint2ToEndpoint(peers[index])
+		ep, err := ParseEndpointWithPath(peers[index])
 		if err != nil {
 			return nil, err
 		}
@@ -35,6 +37,30 @@ func Query2(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[st
 // peerAddress necessary
 func Query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
 	channelID string, peers []Endpoint) (*peer.ProposalResponse, error) {
+	proposalResponse, err := query(chaincode, mspOpt, args, privateData, channelID, peers)
+	if err != nil {
+		return nil, err
+	}
+
+	resp := proposalResponse[0]
+
+	if resp == nil {
+		return nil, errors.New("received nil proposal response")
+	}
+
+	if resp.Response == nil {
+		return nil, errors.New("received proposal response with nil response")
+	}
+
+	if resp.Response.Status != int32(common.Status_SUCCESS) {
+		return nil, fmt.Errorf("query failed with status: %d - %s", resp.Response.Status, resp.Response.Message)
+	}
+
+	return resp, nil
+}
+
+func query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
+	channelID string, peers []Endpoint) ([]*peer.ProposalResponse, error) {
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
 		chaincode.Name,
@@ -43,7 +69,7 @@ func Query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[str
 		peer.ChaincodeSpec_GOLANG,
 		args,
 	)
-	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("GetSigner() -> %v", err)
 	}
@@ -68,14 +94,14 @@ func Query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[str
 	if err != nil {
 		return nil, fmt.Errorf("protoutil.CreateChaincodeProposalWithTxIDAndTransient() -> %v", err)
 	}
+	fmt.Printf("txid: %s\n", txid)
 
 	signedProp, err := protoutil.GetSignedProposal(prop, signer)
 	if err != nil {
 		return nil, fmt.Errorf("protoutil.GetSignedProposal() -> %v", err)
 	}
 
-	var peerClients []*client.PeerClient
-	var endorserClients []peer.EndorserClient
+	var proposalResponse []*peer.ProposalResponse
 	for index := range peers {
 		peerClient, err := client.NewPeerClientSelf(
 			peers[index].Address,
@@ -87,24 +113,24 @@ func Query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[str
 		if err != nil {
 			return nil, fmt.Errorf("NewPeerClient() -> %v", err)
 		}
-		peerClients = append(peerClients, peerClient)
+		defer peerClient.Close()
 
 		endorserClient, err := peerClient.Endorser()
 		if err != nil {
 			return nil, fmt.Errorf("peerClient.Endorser() -> %v", err)
 		}
-		endorserClients = append(endorserClients, endorserClient)
-	}
-	defer func() {
-		for index := range peerClients {
-			_ = peerClients[index].Close()
-		}
-	}()
 
-	responses, err := processProposals(endorserClients, signedProp)
-	if err != nil {
-		return nil, fmt.Errorf("processProposals() -> %v", err)
+		resp, err := endorserClient.ProcessProposal(context.Background(), signedProp)
+		if err != nil {
+			fmt.Printf("get endorser from peer client failed: %v", err)
+			continue
+		}
+		proposalResponse = append(proposalResponse, resp)
 	}
-	fmt.Printf("txid: %s\n", txid)
-	return responses[0], nil
+
+	if len(proposalResponse) == 0 {
+		return nil, errors.New("all peers process proposal failed")
+	}
+
+	return proposalResponse, nil
 }

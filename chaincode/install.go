@@ -28,9 +28,9 @@ func Install(chainOpt ChainOpt, mspOpt MSPOpt, peers Endpoint, cTor string, isPa
 		return nil, fmt.Errorf("get deployment failed: %v", err)
 	}
 
-	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
-		return nil, fmt.Errorf("get signer from msp [id:%s,path:%s] failed: %v", mspOpt.Id, mspOpt.Path, err)
+		return nil, fmt.Errorf("get signer from msp [id:%s,path:%s] failed: %v", mspOpt.ID, mspOpt.Path, err)
 	}
 
 	creator, err := signer.Serialize()

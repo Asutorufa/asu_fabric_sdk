@@ -2,7 +2,6 @@ package chaincode
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,12 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	mb "github.com/hyperledger/fabric-protos-go/msp"
-	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
@@ -113,17 +110,11 @@ func getChaincodeInvocationSpec(
 	Type peer.ChaincodeSpec_Type,
 	args [][]byte) *peer.ChaincodeInvocationSpec {
 	return &peer.ChaincodeInvocationSpec{
-		ChaincodeSpec: getChaincodeSpec(
-			path,
-			name,
-			isInit,
-			version,
-			args,
-			Type,
-		),
+		ChaincodeSpec: getChaincodeSpec(path, name, isInit, version, args, Type),
 	}
 }
 
+//ChainOpt chaincode about options for functions
 type ChainOpt struct {
 	Path                string
 	Name                string
@@ -142,6 +133,7 @@ type ChainOpt struct {
 	Type peer.ChaincodeSpec_Type
 }
 
+//PrivateDataCollectionConfig private data collection config
 type PrivateDataCollectionConfig struct {
 	Name              string
 	Policy            string
@@ -153,42 +145,47 @@ type PrivateDataCollectionConfig struct {
 	EndorsementPolicy
 }
 
+//EndorsementPolicy endorser policy
 type EndorsementPolicy struct {
 	ChannelConfigPolicy string
 	SignaturePolicy     string
 }
 
-type GrpcTLSOpt2 struct {
+//GrpcTLSOptWithPath grpc tls opt(cert is path)
+type GrpcTLSOptWithPath struct {
 	ClientCrtPath string // for client auth req
 	ClientKeyPath string // for client auth req
-	CaPath        string
+	CaPath        string // tls ca cert
 
 	ServerNameOverride string
 	Timeout            time.Duration
 }
 
+//GrpcTLSOpt grpc tls opt(cert is []byte)
 type GrpcTLSOpt struct {
 	ClientCrt []byte
 	ClientKey []byte
 	Ca        []byte
 
 	ServerNameOverride string
-
-	Timeout time.Duration
+	Timeout            time.Duration
 }
 
+//Endpoint endpoint, such as: peer and orderer
 type Endpoint struct {
 	Address string
 	GrpcTLSOpt
 }
 
-type Endpoint2 struct {
+//EndpointWithPath endpoint, such as: peer and orderer(cert is path)
+type EndpointWithPath struct {
 	Address string
-	GrpcTLSOpt2
+	GrpcTLSOptWithPath
 }
 
-func Endpoint2ToEndpoint(p Endpoint2) (Endpoint, error) {
-	opt, err := GrpcTLSOpt2ToGrpcTLSOpt(p.GrpcTLSOpt2)
+//ParseEndpointWithPath EndpointWithPath type to Endpoint
+func ParseEndpointWithPath(p EndpointWithPath) (Endpoint, error) {
+	opt, err := ParseGrpcTLSOptWithPath(p.GrpcTLSOptWithPath)
 	if err != nil {
 		return Endpoint{}, err
 	}
@@ -199,10 +196,11 @@ func Endpoint2ToEndpoint(p Endpoint2) (Endpoint, error) {
 	}, nil
 }
 
-func Endpoint2sToEndpoints(p []Endpoint2) ([]Endpoint, error) {
+//ParseEndpointsWithPath EndpointWithPath type array to Endpoint array
+func ParseEndpointsWithPath(p []EndpointWithPath) ([]Endpoint, error) {
 	var res []Endpoint
 	for index := range p {
-		tmp, err := Endpoint2ToEndpoint(p[index])
+		tmp, err := ParseEndpointWithPath(p[index])
 		if err != nil {
 			return []Endpoint{}, fmt.Errorf("convert error -> %v", err)
 		}
@@ -212,7 +210,8 @@ func Endpoint2sToEndpoints(p []Endpoint2) ([]Endpoint, error) {
 	return res, nil
 }
 
-func GrpcTLSOpt2ToGrpcTLSOpt(g GrpcTLSOpt2) (gg GrpcTLSOpt, err error) {
+//ParseGrpcTLSOptWithPath GrpcTLSOptWithPath type to GrpcTLSOpt
+func ParseGrpcTLSOptWithPath(g GrpcTLSOptWithPath) (gg GrpcTLSOpt, err error) {
 	switch {
 	case g.ClientCrtPath != "":
 		gg.ClientCrt, err = ioutil.ReadFile(g.ClientCrtPath)
@@ -237,9 +236,10 @@ func GrpcTLSOpt2ToGrpcTLSOpt(g GrpcTLSOpt2) (gg GrpcTLSOpt, err error) {
 	return
 }
 
+//MSPOpt msp about options
 type MSPOpt struct {
 	Path string
-	Id   string
+	ID   string
 }
 
 // processProposals sends a signed proposal to a set of peers, and gathers all the responses.
@@ -272,15 +272,7 @@ func processProposals(endorserClients []peer.EndorserClient, signedProposal *pee
 	return responses, nil
 }
 
-func NewDeliverClient(peer *client.PeerClient) (peer.DeliverClient, error) {
-	return peer.PeerDeliver()
-}
-
-func NewEndorserClient(client *client.PeerClient) (peer.EndorserClient, error) {
-	return client.Endorser()
-}
-
-var (
+// var (
 //spec *peer.ChaincodeSpec
 //cID  string
 //txID string
@@ -301,25 +293,10 @@ var (
 // clientAuth bool // <- orderer_tls_clientAuthRequired
 // connTimeout time.Duration // <- orderer_client_connTimeout
 // tlsHandshakeTimeShift time.Duration // <- orderer_tls_handshakeTimeShift
-)
+// )
 
-func GetEndorserClient(client *client.PeerClient) (peer.EndorserClient, error) {
-	return client.Endorser()
-}
-
-func GetDeliverClient(peer *client.PeerClient) (peer.DeliverClient, error) {
-	return peer.PeerDeliver()
-}
-
-func GetCertificate(peer *client.PeerClient) tls.Certificate {
-	return peer.Certificate()
-}
-
-func GetBroadcastClient(order *client.OrdererClient) (orderer.AtomicBroadcast_BroadcastClient, error) {
-	return order.Broadcast()
-}
-
-type collectionConfigJson struct {
+//collectionConfigJSON private data config json
+type collectionConfigJSON struct {
 	Name              string `json:"name"`
 	Policy            string `json:"policy"`
 	RequiredPeerCount *int32 `json:"requiredPeerCount"`
@@ -337,7 +314,7 @@ type collectionConfigJson struct {
 // from the supplied byte array; the byte array must contain a
 // json-formatted array of collectionConfigJson elements
 func getCollectionConfigFromBytes(cconfBytes []byte) (*peer.CollectionConfigPackage, []byte, error) {
-	cconf := &[]collectionConfigJson{}
+	cconf := &[]collectionConfigJSON{}
 	err := json.Unmarshal(cconfBytes, cconf)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "could not parse the collection configuration")

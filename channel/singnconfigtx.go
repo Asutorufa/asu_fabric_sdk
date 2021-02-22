@@ -14,7 +14,7 @@ func SignConfigTx(channelID string, txFile []byte, mspOpt chaincode.MSPOpt) ([]b
 		return nil, fmt.Errorf("unmarshalEnvelope Failed: %v", err)
 	}
 
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer failed: %v", err)
 	}

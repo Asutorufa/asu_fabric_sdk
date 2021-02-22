@@ -17,7 +17,7 @@ func Create(channelID string, txFile []byte, mspOpt chaincode.MSPOpt, orderers [
 		return nil, fmt.Errorf("get tx envelop failed: %v", err)
 	}
 
-	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer failed: %v", err)
 	}

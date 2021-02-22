@@ -28,31 +28,20 @@ func Invoke2(
 	args [][]byte, // [][]byte{[]byte("function"),[]byte("a"),[]byte("b")}, first array is function name
 	privateData map[string][]byte,
 	channelID string,
-	peers []Endpoint2,
-	orderer Endpoint2,
+	peers []EndpointWithPath,
+	orderers []EndpointWithPath,
 ) (*peer.ProposalResponse, error) {
-	var eps []Endpoint
-	for index := range peers {
-		ep, err := Endpoint2ToEndpoint(peers[index])
-		if err != nil {
-			return nil, err
-		}
-		eps = append(eps, ep)
+	eps, err := ParseEndpointsWithPath(peers)
+	if err != nil {
+		return nil, fmt.Errorf("parse endpoints failed: %v", err)
 	}
-	ordereR, err := Endpoint2ToEndpoint(orderer)
+
+	ordererss, err := ParseEndpointsWithPath(orderers)
 	if err != nil {
 		return nil, err
 	}
-	return Invoke(
-		chaincode,
-		mspOpt,
-		args,
-		privateData,
-		channelID,
-		//"",
-		eps,
-		ordereR,
-	)
+
+	return Invoke(chaincode, mspOpt, args, privateData, channelID, eps, ordererss)
 }
 
 // Invoke
@@ -67,7 +56,7 @@ func Invoke2(
 // ordererAddress necessary orderer address
 func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	privateData map[string][]byte, channelID string, //txID string,
-	peers []Endpoint, orderer Endpoint) (*peer.ProposalResponse, error) {
+	peers []Endpoint, orderers []Endpoint) (*peer.ProposalResponse, error) {
 
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
@@ -77,7 +66,7 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 		peer.ChaincodeSpec_GOLANG,
 		args,
 	)
-	signer, err := GetSigner(mspOpt.Path, mspOpt.Id)
+	signer, err := GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -106,34 +95,45 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("txid: %s\n", txid)
 
 	signedProp, err := protoutil.GetSignedProposal(prop, signer)
 	if err != nil {
 		return nil, err
 	}
 
-	var peerClients []*client.PeerClient
-	var endorserClients []peer.EndorserClient
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
-	for index := range peers {
+	var proposalResponse []*peer.ProposalResponse
+	for pi := range peers {
 		peerClient, err := client.NewPeerClientSelf(
-			peers[index].Address,
-			peers[index].GrpcTLSOpt.ServerNameOverride,
-			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			client.WithTLS(peers[index].GrpcTLSOpt.Ca),
-			client.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
+			peers[pi].Address,
+			peers[pi].GrpcTLSOpt.ServerNameOverride,
+			client.WithClientCert(peers[pi].GrpcTLSOpt.ClientKey, peers[pi].GrpcTLSOpt.ClientCrt),
+			client.WithTLS(peers[pi].GrpcTLSOpt.Ca),
+			client.WithTimeout(peers[pi].GrpcTLSOpt.Timeout),
 		)
 		if err != nil {
-			return nil, err
+			log.Printf("create peer [%s] client failed: %v", peers[pi].Address, err)
+			continue
 		}
-		peerClients = append(peerClients, peerClient)
+		defer peerClient.Close()
+
 		certificate = peerClient.Certificate()
+
 		endorserClient, err := peerClient.Endorser()
 		if err != nil {
-			return nil, err
+			log.Printf("get endorser from peer client failed: %v", err)
+			continue
 		}
-		endorserClients = append(endorserClients, endorserClient)
+
+		resp, err := endorserClient.ProcessProposal(context.Background(), signedProp)
+		if err != nil {
+			log.Printf("process proposal failed: %v", err)
+			continue
+		}
+
+		proposalResponse = append(proposalResponse, resp)
 
 		deliverClient, err := peerClient.PeerDeliver()
 		if err != nil {
@@ -141,19 +141,9 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 		}
 		deliverClients = append(deliverClients, deliverClient)
 	}
-	defer func() {
-		for index := range peerClients {
-			_ = peerClients[index].Close()
-		}
-	}()
 
-	responses, err := processProposals(endorserClients, signedProp)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("txid: %s\n", txid)
-	resp := responses[0]
-	if resp == nil {
+	resp := proposalResponse[0]
+	if proposalResponse == nil {
 		return resp, nil
 	}
 
@@ -161,59 +151,56 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 		return resp, nil
 	}
 
-	env, err := protoutil.CreateSignedTx(prop, signer, responses...)
+	env, err := protoutil.CreateSignedTx(prop, signer, proposalResponse...)
 	if err != nil {
 		return resp, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-
-	var eps []string
-	for index := range peers {
-		eps = append(eps, peers[index].Address)
-	}
-	dg := NewDeliverGroup(
-		deliverClients,
-		eps,
-		signer,
-		certificate,
-		channelID,
-		txid,
-	)
-
-	err = dg.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	order, err := client.NewOrdererClientSelf(
-		orderer.Address,
-		orderer.GrpcTLSOpt.ServerNameOverride,
-		client.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
-		client.WithTLS(orderer.GrpcTLSOpt.Ca),
-		client.WithTimeout(orderer.GrpcTLSOpt.Timeout),
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer order.Close()
-	ordererClient, err := order.Broadcast()
-	if err != nil {
-		return nil, err
-	}
-	err = ordererClient.Send(env)
-	if err != nil {
-		return resp, err
-	}
-
-	if dg != nil && ctx != nil {
-		err = dg.Wait(ctx)
+	for oi := range orderers {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		dg := NewDeliverGroup(deliverClients, signer, certificate, channelID, txid)
+		err = dg.Connect(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("dg.Wait() -> %v", err)
+			return nil, err
+		}
+
+		ordererClient, err := client.NewOrdererClientSelf(
+			orderers[oi].Address,
+			orderers[oi].GrpcTLSOpt.ServerNameOverride,
+			client.WithClientCert(orderers[oi].GrpcTLSOpt.ClientKey, orderers[oi].GrpcTLSOpt.ClientCrt),
+			client.WithTLS(orderers[oi].GrpcTLSOpt.Ca),
+			client.WithTimeout(orderers[oi].GrpcTLSOpt.Timeout),
+		)
+		if err != nil {
+			log.Printf("create orderer[%s] client failed: %v", orderers[oi].Address, err)
+			continue
+		}
+		defer ordererClient.Close()
+
+		broadcast, err := ordererClient.Broadcast()
+		if err != nil {
+			log.Printf("get broadcast from orderer client failed: %v\n", err)
+			continue
+		}
+
+		err = broadcast.Send(env)
+		if err != nil {
+			log.Printf("orderer send proposal failed: %v", err)
+			continue
+		}
+
+		if dg != nil && ctx != nil {
+			err = dg.Wait(ctx)
+			if err != nil {
+				log.Printf("dg.Wait() -> %v\n", err)
+				continue
+			}
+			log.Println("deliver get block, wait successful")
+			return resp, nil
 		}
 	}
-	return resp, nil
+	return nil, fmt.Errorf("broadcast proposal failed")
 }
 
 // DeliverGroup holds all of the information needed to connect
@@ -246,7 +233,7 @@ type DeliverClient struct {
 //from github.com/hyperledger/fabric/internal/peer/chaincode/common.go:NewDeliverGroup()
 func NewDeliverGroup(
 	deliverClients []peer.DeliverClient,
-	peerAddresses []string,
+	// peerAddresses []string,
 	signer msp.SigningIdentity,
 	certificate tls.Certificate,
 	channelID string,
@@ -254,13 +241,13 @@ func NewDeliverGroup(
 ) *DeliverGroup {
 	clients := make([]*DeliverClient, len(deliverClients))
 	for i, client := range deliverClients {
-		address := peerAddresses[i]
+		// address := peerAddresses[i]
 		//if address == "" {
 		//	address = viper.GetString("peer.address")
 		//}
 		dc := &DeliverClient{
-			Client:  client,
-			Address: address,
+			Client: client,
+			// Address: address,
 		}
 		clients[i] = dc
 	}
