@@ -11,8 +11,6 @@ import (
 	"github.com/Asutorufa/fabricsdk/chaincode"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/core/chaincode/platforms/golang"
-	"github.com/hyperledger/fabric/core/chaincode/platforms/java"
-	"github.com/hyperledger/fabric/core/chaincode/platforms/node"
 )
 
 // Package package a chaincode
@@ -47,7 +45,7 @@ func Package(
 		return nil, err
 	}
 
-	codeBytes, err := GetDeploymentPayload(chainOpt.Type, chainOpt.Path)
+	codeBytes, err := chaincode.GetDeploymentPayload(chainOpt.Type, chainOpt.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -103,22 +101,4 @@ func NormalizePath(tYPE peer.ChaincodeSpec_Type, path string) (string, error) {
 	case peer.ChaincodeSpec_JAVA:
 	}
 	return path, nil
-}
-
-// GetDeploymentPayload get chaincode data from path for different language chaincode
-func GetDeploymentPayload(tYPE peer.ChaincodeSpec_Type, path string) ([]byte, error) {
-	switch tYPE {
-	case peer.ChaincodeSpec_GOLANG:
-		platform := &golang.Platform{}
-		return platform.GetDeploymentPayload(path)
-	case peer.ChaincodeSpec_NODE:
-		platform := &node.Platform{}
-		return platform.GetDeploymentPayload(path)
-	case peer.ChaincodeSpec_JAVA:
-		platform := &java.Platform{}
-		return platform.GetDeploymentPayload(path)
-	case peer.ChaincodeSpec_CAR:
-	}
-
-	return nil, fmt.Errorf("unsupport package platform -> %v", tYPE.String())
 }

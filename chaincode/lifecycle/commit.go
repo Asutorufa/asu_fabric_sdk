@@ -11,13 +11,8 @@ import (
 
 // Commit commit a chaincode
 // chainOpt need: name,version,sequence optional: others
-func Commit(
-	chainOpt chaincode.ChainOpt,
-	mspOpt chaincode.MSPOpt,
-	channelID string,
-	peers []chaincode.Endpoint,
-	orderers []chaincode.Endpoint,
-) (*peer.ProposalResponse, error) {
+func Commit(chainOpt chaincode.ChainOpt, mspOpt chaincode.MSPOpt, channelID string,
+	peers []chaincode.Endpoint, orderers []chaincode.Endpoint) (*peer.ProposalResponse, error) {
 	var collections *peer.CollectionConfigPackage
 	for i := range chainOpt.CollectionsConfig {
 		var ep *peer.ApplicationPolicy

@@ -20,8 +20,8 @@ func WithTimeout(duration time.Duration) func(client *grpcclient.ClientConfig) {
 	}
 }
 
-//WithTLS2 tls ca
-func WithTLS2(caPEMPath string) func(client *grpcclient.ClientConfig) {
+//WithTLSPath tls ca
+func WithTLSPath(caPEMPath string) func(client *grpcclient.ClientConfig) {
 	data, err := ioutil.ReadFile(caPEMPath)
 	if err != nil {
 		log.Printf("caPEM read error, set to false -> %v\n", err)
@@ -41,8 +41,8 @@ func WithTLS(caPEM []byte) func(client *grpcclient.ClientConfig) {
 	}
 }
 
-//WithClientCert2 for require client auth cert
-func WithClientCert2(keyPEMPath, certPEMPath string) func(client *grpcclient.ClientConfig) {
+//WithClientCertPath for require client auth cert
+func WithClientCertPath(keyPEMPath, certPEMPath string) func(client *grpcclient.ClientConfig) {
 	key, err := ioutil.ReadFile(keyPEMPath)
 	if err != nil {
 		log.Printf("client key read error, set to false -> %v\n", err)

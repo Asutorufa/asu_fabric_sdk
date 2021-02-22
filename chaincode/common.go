@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"sync"
 	"time"
 
@@ -13,8 +14,10 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
+	mb "github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/orderer"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/msp"
@@ -33,6 +36,44 @@ func GetSigner(mspPath, mspID string) (msp.SigningIdentity, error) {
 		return nil, err
 	}
 	return mgmt.GetLocalMSP(factory.GetDefault()).GetDefaultSigningIdentity()
+}
+
+func newMSPConfig() {
+	mspConfig := &mb.FabricMSPConfig{
+		Name:                 "", // msp id
+		RootCerts:            [][]byte{},
+		IntermediateCerts:    [][]byte{},
+		Admins:               [][]byte{},
+		RevocationList:       [][]byte{},
+		TlsRootCerts:         [][]byte{},
+		TlsIntermediateCerts: [][]byte{},
+		OrganizationalUnitIdentifiers: []*mb.FabricOUIdentifier{
+			{
+				OrganizationalUnitIdentifier: "",
+				Certificate:                  []byte{},
+			},
+		},
+		FabricNodeOus: &mb.FabricNodeOUs{},
+		CryptoConfig: &mb.FabricCryptoConfig{ // Set FabricCryptoConfig
+			SignatureHashFamily:            bccsp.SHA2,
+			IdentityIdentifierHashFunction: bccsp.SHA256,
+		},
+		SigningIdentity: &mb.SigningIdentityInfo{
+			PublicSigner:  []byte{}, // 节点证书(signCerts)
+			PrivateSigner: nil,
+		},
+	}
+
+	data, err := proto.Marshal(mspConfig)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	_ = &mb.MSPConfig{
+		Type:   int32(msp.FABRIC),
+		Config: data,
+	}
 }
 
 // getChaincodeSpec

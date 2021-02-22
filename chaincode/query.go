@@ -10,14 +10,8 @@ import (
 	"github.com/hyperledger/fabric/protoutil"
 )
 
-func Query2(
-	chaincode ChainOpt,
-	mspOpt MSPOpt,
-	args [][]byte,
-	privateData map[string][]byte,
-	channelID string,
-	peers []Endpoint2,
-) (*peer.ProposalResponse, error) {
+func Query2(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
+	channelID string, peers []Endpoint2) (*peer.ProposalResponse, error) {
 	var peers2 []Endpoint
 
 	for index := range peers {
@@ -28,18 +22,10 @@ func Query2(
 		peers2 = append(peers2, ep)
 	}
 
-	return Query(
-		chaincode,
-		mspOpt,
-		args,
-		privateData,
-		channelID,
-		//"",
-		peers2,
-	)
+	return Query(chaincode, mspOpt, args, privateData, channelID, peers2)
 }
 
-// Query
+// Query query from chaincode
 // chaincode Path,Name,IsInit,Version,Type are necessary
 // peerGrpcOpt Timeout is necessary
 // mspOpt necessary
@@ -47,15 +33,8 @@ func Query2(
 // privateData not necessary
 // channelID necessary
 // peerAddress necessary
-func Query(
-	chaincode ChainOpt,
-	mspOpt MSPOpt,
-	args [][]byte,
-	privateData map[string][]byte,
-	channelID string,
-	//txID string,
-	peers []Endpoint,
-) (*peer.ProposalResponse, error) {
+func Query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
+	channelID string, peers []Endpoint) (*peer.ProposalResponse, error) {
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
 		chaincode.Name,

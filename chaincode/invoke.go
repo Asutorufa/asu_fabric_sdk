@@ -65,16 +65,9 @@ func Invoke2(
 // channelID necessary channel name
 // peerAddress necessary peer address array
 // ordererAddress necessary orderer address
-func Invoke(
-	chaincode ChainOpt,
-	mspOpt MSPOpt,
-	args [][]byte,
-	privateData map[string][]byte,
-	channelID string,
-	//txID string,
-	peers []Endpoint,
-	orderer Endpoint,
-) (*peer.ProposalResponse, error) {
+func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
+	privateData map[string][]byte, channelID string, //txID string,
+	peers []Endpoint, orderer Endpoint) (*peer.ProposalResponse, error) {
 
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
@@ -249,6 +242,8 @@ type DeliverClient struct {
 	Address    string
 }
 
+//NewDeliverGroup a set of deliver clients, check the deliver send successful
+//from github.com/hyperledger/fabric/internal/peer/chaincode/common.go:NewDeliverGroup()
 func NewDeliverGroup(
 	deliverClients []peer.DeliverClient,
 	peerAddresses []string,
