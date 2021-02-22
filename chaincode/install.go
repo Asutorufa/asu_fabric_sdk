@@ -16,6 +16,7 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/platforms/node"
 	"github.com/hyperledger/fabric/core/common/ccpackage"
 	"github.com/hyperledger/fabric/core/common/ccprovider"
+	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protoutil"
 )
 
@@ -23,14 +24,23 @@ import (
 //cTor eg: '{"Args":["init","a","100","b","200"]}'
 // isPackage whether chainOpt.Path is a .tar.gz package or not
 func Install(chainOpt ChainOpt, mspOpt MSPOpt, peers Endpoint, cTor string, isPackage bool) (proposalResponse *peer.ProposalResponse, err error) {
-	deploymentPayload, err := getDeploymentPayload(chainOpt, cTor, isPackage)
+	peerClient, err := client.NewPeerClient(peers.Address, peers.ServerNameOverride, client.WithTLS(peers.Ca), client.WithClientCert(peers.ClientKey, peers.ClientCrt))
 	if err != nil {
-		return nil, fmt.Errorf("get deployment failed: %v", err)
+		return nil, fmt.Errorf("create new peer[%s] client failed: %v", peers.Address, err)
 	}
-
 	signer, err := GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer from msp [id:%s,path:%s] failed: %v", mspOpt.ID, mspOpt.Path, err)
+	}
+
+	return InternalInstall(chainOpt, signer, peerClient, cTor, isPackage)
+}
+
+//InternalInstall install a chaincode
+func InternalInstall(chainOpt ChainOpt, signer msp.SigningIdentity, peerClient *client.PeerClient, cTor string, isPackage bool) (proposalResponse *peer.ProposalResponse, err error) {
+	deploymentPayload, err := getDeploymentPayload(chainOpt, cTor, isPackage)
+	if err != nil {
+		return nil, fmt.Errorf("get deployment failed: %v", err)
 	}
 
 	creator, err := signer.Serialize()
@@ -46,11 +56,6 @@ func Install(chainOpt ChainOpt, mspOpt MSPOpt, peers Endpoint, cTor string, isPa
 	signedProposal, err := protoutil.GetSignedProposal(proposal, signer)
 	if err != nil {
 		return nil, fmt.Errorf("signed proposal failed: %v", err)
-	}
-
-	peerClient, err := client.NewPeerClient(peers.Address, peers.ServerNameOverride, client.WithTLS(peers.Ca), client.WithClientCert(peers.ClientKey, peers.ClientCrt))
-	if err != nil {
-		return nil, fmt.Errorf("create new peer[%s] client failed: %v", peers.Address, err)
 	}
 
 	endorser, err := peerClient.Endorser()
