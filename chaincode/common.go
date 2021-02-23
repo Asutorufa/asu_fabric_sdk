@@ -145,6 +145,64 @@ type PrivateDataCollectionConfig struct {
 	EndorsementPolicy
 }
 
+func ConvertCollectionConfig(CollectionsConfig []PrivateDataCollectionConfig) (*peer.CollectionConfigPackage, error) {
+	var collections *peer.CollectionConfigPackage
+
+	for i := range CollectionsConfig {
+		var ep *peer.ApplicationPolicy
+		if CollectionsConfig[i].SignaturePolicy != "" &&
+			CollectionsConfig[i].ChannelConfigPolicy != "" {
+			return nil, fmt.Errorf("must spcify only one policy both SignaturePolicy and ChannelConfigPolicy")
+		}
+		if CollectionsConfig[i].SignaturePolicy != "" {
+			p, err := policydsl.FromString(CollectionsConfig[i].SignaturePolicy)
+			if err != nil {
+				return nil, fmt.Errorf("format policy error -> %v", err)
+			}
+
+			ep = &peer.ApplicationPolicy{
+				Type: &peer.ApplicationPolicy_SignaturePolicy{
+					SignaturePolicy: p,
+				},
+			}
+		}
+		if CollectionsConfig[i].ChannelConfigPolicy != "" {
+			ep = &peer.ApplicationPolicy{
+				Type: &peer.ApplicationPolicy_ChannelConfigPolicyReference{
+					ChannelConfigPolicyReference: CollectionsConfig[i].ChannelConfigPolicy,
+				},
+			}
+		}
+		p, err := policydsl.FromString(CollectionsConfig[i].Policy)
+		if err != nil {
+			return nil, fmt.Errorf("policy string error -> %v", err)
+		}
+
+		cc := &peer.CollectionConfig{
+			Payload: &peer.CollectionConfig_StaticCollectionConfig{
+				StaticCollectionConfig: &peer.StaticCollectionConfig{
+					Name: CollectionsConfig[i].Name,
+					MemberOrgsPolicy: &peer.CollectionPolicyConfig{
+						Payload: &peer.CollectionPolicyConfig_SignaturePolicy{
+							SignaturePolicy: p,
+						},
+					},
+					RequiredPeerCount: CollectionsConfig[i].RequiredPeerCount,
+					MaximumPeerCount:  CollectionsConfig[i].MaxPeerCount,
+					BlockToLive:       CollectionsConfig[i].BlockToLive,
+					MemberOnlyRead:    CollectionsConfig[i].MemberOnlyRead,
+					MemberOnlyWrite:   CollectionsConfig[i].MemberOnlyWrite,
+					EndorsementPolicy: ep,
+				},
+			},
+		}
+
+		collections.Config = append(collections.Config, cc)
+	}
+
+	return collections, nil
+}
+
 //EndorsementPolicy endorser policy
 type EndorsementPolicy struct {
 	ChannelConfigPolicy string

@@ -6,7 +6,6 @@ import (
 	"github.com/Asutorufa/fabricsdk/chaincode"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
-	"github.com/hyperledger/fabric/common/policydsl"
 )
 
 // ApproveForMyOrg approve for my org
@@ -40,58 +39,9 @@ func ApproveForMyOrg(
 		}
 	}
 
-	var collections *peer.CollectionConfigPackage
-
-	for i := range chainOpt.CollectionsConfig {
-		var ep *peer.ApplicationPolicy
-		if chainOpt.CollectionsConfig[i].SignaturePolicy != "" &&
-			chainOpt.CollectionsConfig[i].ChannelConfigPolicy != "" {
-			return nil, fmt.Errorf("must spcify only one policy both SignaturePolicy and ChannelConfigPolicy")
-		}
-		if chainOpt.CollectionsConfig[i].SignaturePolicy != "" {
-			p, err := policydsl.FromString(chainOpt.CollectionsConfig[i].SignaturePolicy)
-			if err != nil {
-				return nil, fmt.Errorf("format policy error -> %v", err)
-			}
-
-			ep = &peer.ApplicationPolicy{
-				Type: &peer.ApplicationPolicy_SignaturePolicy{
-					SignaturePolicy: p,
-				},
-			}
-		}
-		if chainOpt.CollectionsConfig[i].ChannelConfigPolicy != "" {
-			ep = &peer.ApplicationPolicy{
-				Type: &peer.ApplicationPolicy_ChannelConfigPolicyReference{
-					ChannelConfigPolicyReference: chainOpt.CollectionsConfig[i].ChannelConfigPolicy,
-				},
-			}
-		}
-		p, err := policydsl.FromString(chainOpt.CollectionsConfig[i].Policy)
-		if err != nil {
-			return nil, fmt.Errorf("policy string error -> %v", err)
-		}
-
-		cc := &peer.CollectionConfig{
-			Payload: &peer.CollectionConfig_StaticCollectionConfig{
-				StaticCollectionConfig: &peer.StaticCollectionConfig{
-					Name: chainOpt.CollectionsConfig[i].Name,
-					MemberOrgsPolicy: &peer.CollectionPolicyConfig{
-						Payload: &peer.CollectionPolicyConfig_SignaturePolicy{
-							SignaturePolicy: p,
-						},
-					},
-					RequiredPeerCount: chainOpt.CollectionsConfig[i].RequiredPeerCount,
-					MaximumPeerCount:  chainOpt.CollectionsConfig[i].MaxPeerCount,
-					BlockToLive:       chainOpt.CollectionsConfig[i].BlockToLive,
-					MemberOnlyRead:    chainOpt.CollectionsConfig[i].MemberOnlyRead,
-					MemberOnlyWrite:   chainOpt.CollectionsConfig[i].MemberOnlyWrite,
-					EndorsementPolicy: ep,
-				},
-			},
-		}
-
-		collections.Config = append(collections.Config, cc)
+	collections, err := chaincode.ConvertCollectionConfig(chainOpt.CollectionsConfig)
+	if err != nil {
+		return nil, fmt.Errorf("convert collections config failed: %v", err)
 	}
 
 	args := &lb.ApproveChaincodeDefinitionForMyOrgArgs{
