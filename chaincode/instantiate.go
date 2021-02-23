@@ -19,8 +19,36 @@ import (
 //Instantiate init a chaincode
 func Instantiate(channelID string, cTor string,
 	chainOpt ChainOpt, signer msp.SigningIdentity,
-	peerClient client.PeerClient) (*protcommon.Envelope, error) {
+	peerClient client.PeerClient, ordererClients []client.OrdererClient) error {
+	env, err := getSingedTx(channelID, cTor, chainOpt, signer, peerClient)
+	if err != nil {
+		return fmt.Errorf("get signed tx failed: %v", err)
+	}
+	if env == nil {
+		return nil
+	}
 
+	for oi := range ordererClients {
+		broadcast, err := ordererClients[oi].Broadcast()
+		if err != nil {
+			log.Printf("get broadcast failed: %v\n", err)
+			continue
+		}
+
+		err = broadcast.Send(env)
+		if err != nil {
+			log.Printf("broadcast send envelop failed: %v", err)
+			continue
+		}
+
+		return nil
+	}
+	return errors.New("broadcast transaction failed")
+}
+
+func getSingedTx(channelID string, cTor string,
+	chainOpt ChainOpt, signer msp.SigningIdentity,
+	peerClient client.PeerClient) (*protcommon.Envelope, error) {
 	input := &peer.ChaincodeInput{}
 	if err := json.Unmarshal([]byte(cTor), &input); err != nil {
 		return nil, errors.Wrap(err, "chaincode argument error")
