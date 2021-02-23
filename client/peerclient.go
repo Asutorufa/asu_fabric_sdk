@@ -22,10 +22,12 @@ import (
 //	certPEM           []byte         // peer_tls_client_file
 //)
 
+//PeerClient peer client
 type PeerClient struct {
 	Client
 }
 
+//NewPeerClient create new peer client by fabric internal grpc client
 func NewPeerClient(address, override string, Opt ...func(*grpcclient.ClientConfig)) (p *PeerClient, err error) {
 	config := &grpcclient.ClientConfig{}
 
@@ -44,6 +46,7 @@ func NewPeerClient(address, override string, Opt ...func(*grpcclient.ClientConfi
 	return
 }
 
+//NewPeerClientSelf create new peer client by self function
 func NewPeerClientSelf(address, override string, Opt ...func(config *grpcclient.ClientConfig)) (*PeerClient, error) {
 	fmt.Printf("new peer [%s] client\n", address)
 	c, err := NewClient(address, override, Opt...)

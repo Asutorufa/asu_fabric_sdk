@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
+//Client grpc client
 type Client struct {
 	address      string
 	sn           string
