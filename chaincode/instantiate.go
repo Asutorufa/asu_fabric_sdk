@@ -76,6 +76,9 @@ func Instantiate(channelID string, cTor string,
 	prop, _, err := protoutil.CreateDeployProposalFromCDS(
 		channelID, deployMent, creator, policyMarshalled,
 		[]byte(chainOpt.EndorsementPlugin), []byte(chainOpt.ValidationPlugin), collectionsByte)
+	if err != nil {
+		return nil, fmt.Errorf("create deploy proposal failed: %v", err)
+	}
 
 	signedProposal, err := protoutil.GetSignedProposal(prop, signer)
 	if err != nil {
