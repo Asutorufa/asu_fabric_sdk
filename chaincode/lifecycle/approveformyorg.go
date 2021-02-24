@@ -4,19 +4,32 @@ import (
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
+	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
 )
 
 // ApproveForMyOrg approve for my org
 // chainOpt -> need: Name,Version,Sequence optional: others
-func ApproveForMyOrg(
-	chainOpt chaincode.ChainOpt,
-	mspOpt chaincode.MSPOpt,
-	channelID string,
-	peers []chaincode.Endpoint,
-	orderers []chaincode.Endpoint,
-) (*peer.ProposalResponse, error) {
+func ApproveForMyOrg(chainOpt chaincode.ChainOpt, mspOpt chaincode.MSPOpt, channelID string,
+	peers []chaincode.Endpoint, orderers []chaincode.Endpoint) (*peer.ProposalResponse, error) {
+	peerClients := chaincode.GetPeerClients(peers)
+	if len(peerClients) == 0 {
+		return nil, fmt.Errorf("peer clients' number is 0")
+	}
+	defer chaincode.CloseClients(peerClients)
+
+	ordererClients := chaincode.GetOrdererClients(orderers)
+	if len(ordererClients) == 0 {
+		return nil, fmt.Errorf("orderer clients' number is 0")
+	}
+	defer chaincode.CloseClients(ordererClients)
+
+	return InternalApproveForMyOrg(chainOpt, mspOpt, channelID, peerClients, ordererClients)
+}
+
+func InternalApproveForMyOrg(chainOpt chaincode.ChainOpt, mspOpt chaincode.MSPOpt, channelID string,
+	peers []*client.PeerClient, orderers []*client.OrdererClient) (*peer.ProposalResponse, error) {
 	signer, err := chaincode.GetSigner(mspOpt.Path, mspOpt.ID)
 	if err != nil {
 		return nil, fmt.Errorf("get signer [mspPath:%s, mspID:%s] error -> %v", mspOpt.Path, mspOpt.ID, err)
@@ -61,7 +74,7 @@ func ApproveForMyOrg(
 		return nil, fmt.Errorf("crate proposal error -> %v", err)
 	}
 
-	return invoke(signer, proposal, peers, orderers, channelID, txID)
+	return internalInvoke(signer, proposal, peers, orderers, channelID, txID)
 }
 
 // ApproveForMyOrg2 to ApproveForMyOrg

@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -449,4 +450,75 @@ func getCollectionConfigFromBytes(cconfBytes []byte) (*peer.CollectionConfigPack
 	ccp := &peer.CollectionConfigPackage{Config: ccarray}
 	ccpBytes, err := proto.Marshal(ccp)
 	return ccp, ccpBytes, err
+}
+
+func GetOrdererClients(orderers []Endpoint) []*client.OrdererClient {
+	var ordererClients []*client.OrdererClient
+	for oi := range orderers {
+		ordererClient, err := client.NewOrdererClientSelf(
+			orderers[oi].Address,
+			orderers[oi].GrpcTLSOpt.ServerNameOverride,
+			client.WithClientCert(orderers[oi].GrpcTLSOpt.ClientKey, orderers[oi].GrpcTLSOpt.ClientCrt),
+			client.WithTLS(orderers[oi].GrpcTLSOpt.Ca),
+			client.WithTimeout(orderers[oi].GrpcTLSOpt.Timeout),
+		)
+		if err != nil {
+			log.Printf("create orderer [%s] client failed: %v", orderers[oi].Address, err)
+			continue
+		}
+
+		ordererClients = append(ordererClients, ordererClient)
+
+	}
+	return ordererClients
+}
+
+func GetPeerClients(peers []Endpoint) []*client.PeerClient {
+	var peerClients []*client.PeerClient
+
+	for pi := range peers {
+		peerClient, err := client.NewPeerClientSelf(
+			peers[pi].Address,
+			peers[pi].GrpcTLSOpt.ServerNameOverride,
+			client.WithClientCert(peers[pi].GrpcTLSOpt.ClientKey, peers[pi].GrpcTLSOpt.ClientCrt),
+			client.WithTLS(peers[pi].GrpcTLSOpt.Ca),
+			client.WithTimeout(peers[pi].GrpcTLSOpt.Timeout),
+		)
+		if err != nil {
+			log.Printf("create new peer[%s] client failed: %v", peers[pi].Address, err)
+			continue
+		}
+
+		peerClients = append(peerClients, peerClient)
+	}
+
+	return peerClients
+}
+
+func CloseClients(s interface{}) {
+	switch s.(type) {
+	case []*client.PeerClient:
+		x := s.([]*client.PeerClient)
+		for i := range x {
+			x[i].Close()
+		}
+	case []*client.OrdererClient:
+		x := s.([]*client.OrdererClient)
+		for i := range x {
+			x[i].Close()
+		}
+	case []*client.Client:
+		x := s.([]*client.Client)
+		for i := range x {
+			x[i].Close()
+		}
+	case *client.PeerClient:
+		s.(*client.PeerClient).Close()
+	case *client.OrdererClient:
+		s.(*client.OrdererClient).Close()
+	case *client.Client:
+		s.(*client.Client).Close()
+	default:
+		log.Println("un know client type")
+	}
 }

@@ -57,6 +57,25 @@ func Invoke2(
 func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	privateData map[string][]byte, channelID string, //txID string,
 	peers []Endpoint, orderers []Endpoint) (*peer.ProposalResponse, error) {
+	peerClients := GetPeerClients(peers)
+	if len(peerClients) == 0 {
+		return nil, fmt.Errorf("peer clients' number is 0")
+	}
+	defer CloseClients(peerClients)
+
+	ordererClients := GetOrdererClients(orderers)
+	if len(ordererClients) == 0 {
+		return nil, fmt.Errorf("orderer clients' number is 0")
+	}
+	defer CloseClients(ordererClients)
+
+	return InternalInvoke(chaincode, mspOpt, args, privateData, channelID, peerClients, ordererClients)
+}
+
+func InternalInvoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
+	privateData map[string][]byte, channelID string,
+	peers []*client.PeerClient, orderers []*client.OrdererClient,
+) (*peer.ProposalResponse, error) {
 
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
@@ -106,22 +125,10 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	var certificate tls.Certificate
 	var proposalResponse []*peer.ProposalResponse
 	for pi := range peers {
-		peerClient, err := client.NewPeerClientSelf(
-			peers[pi].Address,
-			peers[pi].GrpcTLSOpt.ServerNameOverride,
-			client.WithClientCert(peers[pi].GrpcTLSOpt.ClientKey, peers[pi].GrpcTLSOpt.ClientCrt),
-			client.WithTLS(peers[pi].GrpcTLSOpt.Ca),
-			client.WithTimeout(peers[pi].GrpcTLSOpt.Timeout),
-		)
-		if err != nil {
-			log.Printf("create peer [%s] client failed: %v", peers[pi].Address, err)
-			continue
-		}
-		defer peerClient.Close()
 
-		certificate = peerClient.Certificate()
+		certificate = peers[pi].Certificate()
 
-		endorserClient, err := peerClient.Endorser()
+		endorserClient, err := peers[pi].Endorser()
 		if err != nil {
 			log.Printf("get endorser from peer client failed: %v", err)
 			continue
@@ -135,7 +142,7 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 
 		proposalResponse = append(proposalResponse, resp)
 
-		deliverClient, err := peerClient.PeerDeliver()
+		deliverClient, err := peers[pi].PeerDeliver()
 		if err != nil {
 			return nil, err
 		}
@@ -165,20 +172,7 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 			return nil, err
 		}
 
-		ordererClient, err := client.NewOrdererClientSelf(
-			orderers[oi].Address,
-			orderers[oi].GrpcTLSOpt.ServerNameOverride,
-			client.WithClientCert(orderers[oi].GrpcTLSOpt.ClientKey, orderers[oi].GrpcTLSOpt.ClientCrt),
-			client.WithTLS(orderers[oi].GrpcTLSOpt.Ca),
-			client.WithTimeout(orderers[oi].GrpcTLSOpt.Timeout),
-		)
-		if err != nil {
-			log.Printf("create orderer[%s] client failed: %v", orderers[oi].Address, err)
-			continue
-		}
-		defer ordererClient.Close()
-
-		broadcast, err := ordererClient.Broadcast()
+		broadcast, err := orderers[oi].Broadcast()
 		if err != nil {
 			log.Printf("get broadcast from orderer client failed: %v\n", err)
 			continue

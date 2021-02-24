@@ -61,6 +61,17 @@ func Query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[str
 
 func query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
 	channelID string, peers []Endpoint) ([]*peer.ProposalResponse, error) {
+	peerClients := GetPeerClients(peers)
+	if len(peerClients) == 0 {
+		return nil, fmt.Errorf("peer clients' number is 0")
+	}
+	defer CloseClients(peerClients)
+	return internalQuery(chaincode, mspOpt, args, privateData, channelID, peerClients)
+}
+
+func internalQuery(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
+	privateData map[string][]byte, channelID string,
+	peers []*client.PeerClient) ([]*peer.ProposalResponse, error) {
 	invocation := getChaincodeInvocationSpec(
 		chaincode.Path,
 		chaincode.Name,
@@ -102,20 +113,9 @@ func query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[str
 	}
 
 	var proposalResponse []*peer.ProposalResponse
-	for index := range peers {
-		peerClient, err := client.NewPeerClientSelf(
-			peers[index].Address,
-			peers[index].GrpcTLSOpt.ServerNameOverride,
-			client.WithTLS(peers[index].GrpcTLSOpt.Ca),
-			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			client.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
-		)
-		if err != nil {
-			return nil, fmt.Errorf("NewPeerClient() -> %v", err)
-		}
-		defer peerClient.Close()
+	for pi := range peers {
 
-		endorserClient, err := peerClient.Endorser()
+		endorserClient, err := peers[pi].Endorser()
 		if err != nil {
 			return nil, fmt.Errorf("peerClient.Endorser() -> %v", err)
 		}
@@ -133,4 +133,5 @@ func query(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[str
 	}
 
 	return proposalResponse, nil
+
 }

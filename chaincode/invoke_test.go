@@ -1,6 +1,8 @@
 package chaincode
 
 import (
+	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -101,8 +103,9 @@ func set2(t *testing.T, b [][]byte) {
 }
 
 func TestSet2(t *testing.T) {
-	set2(t, [][]byte{[]byte("set"), []byte("語彙"), []byte("うるさい")})
-	set2(t, [][]byte{[]byte("set2"), []byte("君は"), []byte("ざこ")})
+	rand.Seed(time.Now().Unix())
+	set2(t, [][]byte{[]byte("set"), []byte("time"), []byte(fmt.Sprintf("%f", rand.ExpFloat64()) + " - " + time.Now().String())})
+	set2(t, [][]byte{[]byte("set2"), []byte("namae"), []byte("ざこ - " + time.Now().String())})
 }
 
 func TestTSS(t *testing.T) {

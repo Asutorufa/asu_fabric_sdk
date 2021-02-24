@@ -61,15 +61,16 @@ func get2(t *testing.T, b [][]byte) {
 	)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	// fmt.Println(resp)
 	fmt.Println("status code:", resp.Response.Status, "Payload: -> ", string(resp.Response.Payload))
 }
 
 func TestQuery2(t *testing.T) {
-	get2(t, [][]byte{[]byte("get"), []byte("語彙")})
+	get2(t, [][]byte{[]byte("get"), []byte("time")})
 	fmt.Println()
-	get2(t, [][]byte{[]byte("get2"), []byte("君は")})
+	get2(t, [][]byte{[]byte("get2"), []byte("namae")})
 	fmt.Println()
 	get2(t, [][]byte{[]byte("getCreator")})
 }

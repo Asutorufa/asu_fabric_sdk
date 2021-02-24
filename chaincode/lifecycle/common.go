@@ -71,11 +71,8 @@ func peerInvoke(
 	return resps, nil
 }
 
-func query(
-	signer msp.SigningIdentity,
-	proposal *peer.Proposal,
-	peers []chaincode.Endpoint,
-) (*peer.ProposalResponse, error) {
+func query(signer msp.SigningIdentity, proposal *peer.Proposal,
+	peers []chaincode.Endpoint) (*peer.ProposalResponse, error) {
 	signedProposal, err := signProposal(proposal, signer)
 	if err != nil {
 		return nil, err
@@ -124,11 +121,19 @@ func query(
 	return resp, nil
 }
 
-func queryAll(
-	signer msp.SigningIdentity,
-	proposal *peer.Proposal,
-	peers []chaincode.Endpoint,
-) ([]*peer.ProposalResponse, error) {
+func queryAll(signer msp.SigningIdentity, proposal *peer.Proposal,
+	peers []chaincode.Endpoint) ([]*peer.ProposalResponse, error) {
+	peerClients := chaincode.GetPeerClients(peers)
+	if len(peerClients) == 0 {
+		return nil, fmt.Errorf("no peer can be connect[peerClients' size is 0]")
+	}
+	defer chaincode.CloseClients(peerClients)
+
+	return internalQueryAll(signer, proposal, peerClients)
+}
+
+func internalQueryAll(signer msp.SigningIdentity, proposal *peer.Proposal,
+	peers []*client.PeerClient) ([]*peer.ProposalResponse, error) {
 	signedProposal, err := signProposal(proposal, signer)
 	if err != nil {
 		return nil, err
@@ -136,18 +141,7 @@ func queryAll(
 
 	var resps []*peer.ProposalResponse
 	for _, peer := range peers {
-		peerClient, err := client.NewPeerClientSelf(
-			peer.Address,
-			peer.ServerNameOverride,
-			client.WithClientCert(peer.ClientKey, peer.ClientCrt),
-			client.WithTLS(peer.Ca),
-			client.WithTimeout(6*time.Second),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		endorserClient, err := peerClient.Endorser()
+		endorserClient, err := peer.Endorser()
 		if err != nil {
 			return nil, err
 		}
@@ -177,15 +171,27 @@ func queryAll(
 	return resps, nil
 }
 
-func invoke(
-	signer msp.SigningIdentity,
-	proposal *peer.Proposal,
-	peers []chaincode.Endpoint,
-	orderers []chaincode.Endpoint,
-	channelID string,
-	txID string,
-) (*peer.ProposalResponse, error) {
-	resp, err := queryAll(signer, proposal, peers)
+func invoke(signer msp.SigningIdentity, proposal *peer.Proposal,
+	peers []chaincode.Endpoint, orderers []chaincode.Endpoint,
+	channelID string, txID string) (*peer.ProposalResponse, error) {
+	peerClients := chaincode.GetPeerClients(peers)
+	if len(peerClients) == 0 {
+		return nil, fmt.Errorf("peer clients' is 0")
+	}
+	defer chaincode.CloseClients(peerClients)
+
+	ordererClients := chaincode.GetOrdererClients(orderers)
+	if len(ordererClients) == 0 {
+		return nil, fmt.Errorf("orderer clients' is 0")
+	}
+	defer chaincode.CloseClients(ordererClients)
+
+	return internalInvoke(signer, proposal, peerClients, ordererClients, channelID, txID)
+}
+
+func internalInvoke(signer msp.SigningIdentity, proposal *peer.Proposal, peers []*client.PeerClient,
+	orderers []*client.OrdererClient, channelID string, txID string) (*peer.ProposalResponse, error) {
+	resp, err := internalQueryAll(signer, proposal, peers)
 	if err != nil {
 		return nil, fmt.Errorf("invoke from peers error -> %v", err)
 	}
@@ -198,43 +204,22 @@ func invoke(
 	//
 	//            orderers
 	//
-	var peerClients []*client.PeerClient
 	var endorserClients []peer.EndorserClient
 	var deliverClients []peer.DeliverClient
 	var certificate tls.Certificate
-	for index := range peers {
-		peerClient, err := client.NewPeerClientSelf(
-			peers[index].Address,
-			peers[index].GrpcTLSOpt.ServerNameOverride,
-			client.WithClientCert(peers[index].GrpcTLSOpt.ClientKey, peers[index].GrpcTLSOpt.ClientCrt),
-			client.WithTLS(peers[index].GrpcTLSOpt.Ca),
-			client.WithTimeout(peers[index].GrpcTLSOpt.Timeout),
-		)
-		if err != nil {
-			return nil, err
-		}
-		peerClients = append(peerClients, peerClient)
-		certificate = peerClient.Certificate()
-		endorserClient, err := peerClient.Endorser()
+	for pi := range peers {
+		certificate = peers[pi].Certificate()
+		endorserClient, err := peers[pi].Endorser()
 		if err != nil {
 			return nil, err
 		}
 		endorserClients = append(endorserClients, endorserClient)
 
-		deliverClient, err := peerClient.PeerDeliver()
+		deliverClient, err := peers[pi].PeerDeliver()
 		if err != nil {
 			return nil, err
 		}
 		deliverClients = append(deliverClients, deliverClient)
-	}
-	defer func() {
-		for index := range peerClients {
-			_ = peerClients[index].Close()
-		}
-	}()
-	var eps []string
-	for index := range peers {
-		eps = append(eps, peers[index].Address)
 	}
 
 	dg := chaincode.NewDeliverGroup(
@@ -255,20 +240,7 @@ func invoke(
 			continue
 		}
 
-		order, err := client.NewOrdererClientSelf(
-			orderer.Address,
-			orderer.GrpcTLSOpt.ServerNameOverride,
-			client.WithClientCert(orderer.GrpcTLSOpt.ClientKey, orderer.GrpcTLSOpt.ClientCrt),
-			client.WithTLS(orderer.GrpcTLSOpt.Ca),
-			client.WithTimeout(orderer.GrpcTLSOpt.Timeout),
-		)
-		if err != nil {
-			// return nil, err
-			log.Println(err)
-			continue
-		}
-		defer order.Close()
-		ordererClient, err := order.Broadcast()
+		ordererClient, err := orderer.Broadcast()
 		if err != nil {
 			// return nil, err
 			log.Println(err)
