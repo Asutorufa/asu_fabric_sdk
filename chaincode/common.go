@@ -146,6 +146,7 @@ type PrivateDataCollectionConfig struct {
 	EndorsementPolicy
 }
 
+//ConvertCollectionConfig convert collections config to proto config
 func ConvertCollectionConfig(CollectionsConfig []PrivateDataCollectionConfig) (*peer.CollectionConfigPackage, error) {
 	var collections *peer.CollectionConfigPackage
 
@@ -452,6 +453,7 @@ func getCollectionConfigFromBytes(cconfBytes []byte) (*peer.CollectionConfigPack
 	return ccp, ccpBytes, err
 }
 
+//GetOrdererClients endpoint to orderer clients
 func GetOrdererClients(orderers []Endpoint) []*client.OrdererClient {
 	var ordererClients []*client.OrdererClient
 	for oi := range orderers {
@@ -473,6 +475,7 @@ func GetOrdererClients(orderers []Endpoint) []*client.OrdererClient {
 	return ordererClients
 }
 
+// GetPeerClients endpoint to peer clients
 func GetPeerClients(peers []Endpoint) []*client.PeerClient {
 	var peerClients []*client.PeerClient
 
@@ -495,6 +498,8 @@ func GetPeerClients(peers []Endpoint) []*client.PeerClient {
 	return peerClients
 }
 
+//CloseClients close []*client.PeerClient,[]*client.OrdererClient,[]*client.Client
+// or *client.PeerClient,*client.OrdererClient,*client.Client
 func CloseClients(s interface{}) {
 	switch s.(type) {
 	case []*client.PeerClient:

@@ -12,6 +12,7 @@ import (
 	"github.com/hyperledger/fabric/protoutil"
 )
 
+// Query2 .
 func Query2(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte, privateData map[string][]byte,
 	channelID string, peers []EndpointWithPath) (*peer.ProposalResponse, error) {
 	var peers2 []Endpoint

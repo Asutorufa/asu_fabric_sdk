@@ -44,7 +44,7 @@ func Invoke2(
 	return Invoke(chaincode, mspOpt, args, privateData, channelID, eps, ordererss)
 }
 
-// Invoke
+// Invoke .
 // chaincode just need Path,Name,IsInit, Version, Type
 // peerGrpcOpt Timeout is necessary
 // ordererGrpcOpt Timeout is necessary
@@ -72,6 +72,7 @@ func Invoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	return InternalInvoke(chaincode, mspOpt, args, privateData, channelID, peerClients, ordererClients)
 }
 
+//InternalInvoke invoke
 func InternalInvoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	privateData map[string][]byte, channelID string,
 	peers []*client.PeerClient, orderers []*client.OrdererClient,
