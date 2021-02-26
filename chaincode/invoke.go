@@ -150,10 +150,10 @@ func InternalInvoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 		deliverClients = append(deliverClients, deliverClient)
 	}
 
-	resp := proposalResponse[0]
-	if proposalResponse == nil {
-		return resp, nil
+	if len(proposalResponse) == 0 {
+		return nil, nil
 	}
+	resp := proposalResponse[0]
 
 	if resp.Response.Status >= shim.ERRORTHRESHOLD {
 		return resp, nil
@@ -165,14 +165,6 @@ func InternalInvoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 	}
 
 	for oi := range orderers {
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
-		dg := NewDeliverGroup(deliverClients, signer, certificate, channelID, txid)
-		err = dg.Connect(ctx)
-		if err != nil {
-			return nil, err
-		}
-
 		broadcast, err := orderers[oi].Broadcast()
 		if err != nil {
 			log.Printf("get broadcast from orderer client failed: %v\n", err)
@@ -185,15 +177,25 @@ func InternalInvoke(chaincode ChainOpt, mspOpt MSPOpt, args [][]byte,
 			continue
 		}
 
-		if dg != nil && ctx != nil {
-			err = dg.Wait(ctx)
-			if err != nil {
-				log.Printf("dg.Wait() -> %v\n", err)
-				continue
-			}
-			log.Println("deliver get block, wait successful")
-			return resp, nil
+		dg := NewDeliverGroup(deliverClients, signer, certificate, channelID, txid)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		err = dg.Connect(ctx)
+		if err != nil {
+			log.Printf("create connect failed: %v", err)
+			goto _end
 		}
+
+		err = dg.Wait(ctx)
+		if err != nil {
+			log.Printf("dg.Wait() -> %v\n", err)
+			goto _end
+		}
+		log.Println("deliver get block, wait successful")
+		cancel()
+		return resp, nil
+
+	_end:
+		cancel()
 	}
 	return nil, fmt.Errorf("broadcast proposal failed")
 }
@@ -235,13 +237,13 @@ func NewDeliverGroup(
 	txid string,
 ) *DeliverGroup {
 	clients := make([]*DeliverClient, len(deliverClients))
-	for i, client := range deliverClients {
+	for i, deliverClient := range deliverClients {
 		// address := peerAddresses[i]
 		//if address == "" {
 		//	address = viper.GetString("peer.address")
 		//}
 		dc := &DeliverClient{
-			Client: client,
+			Client: deliverClient,
 			// Address: address,
 		}
 		clients[i] = dc
@@ -264,8 +266,8 @@ func NewDeliverGroup(
 // deliver client fails to connect to its peer
 func (dg *DeliverGroup) Connect(ctx context.Context) error {
 	dg.wg.Add(len(dg.Clients))
-	for _, client := range dg.Clients {
-		go dg.ClientConnect(ctx, client)
+	for _, deliverClient := range dg.Clients {
+		go dg.ClientConnect(ctx, deliverClient)
 	}
 	readyCh := make(chan struct{})
 	go dg.WaitForWG(readyCh)
@@ -316,8 +318,8 @@ func (dg *DeliverGroup) Wait(ctx context.Context) error {
 	}
 
 	dg.wg.Add(len(dg.Clients))
-	for _, client := range dg.Clients {
-		go dg.ClientWait(client)
+	for _, deliverClient := range dg.Clients {
+		go dg.ClientWait(deliverClient)
 	}
 	readyCh := make(chan struct{})
 	go dg.WaitForWG(readyCh)
