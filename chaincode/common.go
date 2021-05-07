@@ -11,67 +11,30 @@ import (
 
 	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
-
-	mb "github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric/msp/mgmt"
+	"github.com/pkg/errors"
 )
 
-// GetSigner initialize msp
 func GetSigner(mspPath, mspID string) (msp.SigningIdentity, error) {
-	err := mgmt.LoadLocalMspWithType(
-		mspPath, // core.yaml -> peer_mspConfigPath
-		factory.GetDefaultOpts(),
-		mspID,                                // peer_localMspId
-		msp.ProviderTypeToString(msp.FABRIC), // peer_localMspType, DEFAULT: SW
-	)
+	amsp, err := msp.New(msp.Options["bccsp"], factory.GetDefault())
 	if err != nil {
-		return nil, err
-	}
-	return mgmt.GetLocalMSP(factory.GetDefault()).GetDefaultSigningIdentity()
-}
-
-func newMSPConfig() {
-	mspConfig := &mb.FabricMSPConfig{
-		Name:                 "", // msp id
-		RootCerts:            [][]byte{},
-		IntermediateCerts:    [][]byte{},
-		Admins:               [][]byte{},
-		RevocationList:       [][]byte{},
-		TlsRootCerts:         [][]byte{},
-		TlsIntermediateCerts: [][]byte{},
-		OrganizationalUnitIdentifiers: []*mb.FabricOUIdentifier{
-			{
-				OrganizationalUnitIdentifier: "",
-				Certificate:                  []byte{},
-			},
-		},
-		FabricNodeOus: &mb.FabricNodeOUs{},
-		CryptoConfig: &mb.FabricCryptoConfig{ // Set FabricCryptoConfig
-			SignatureHashFamily:            bccsp.SHA2,
-			IdentityIdentifierHashFunction: bccsp.SHA256,
-		},
-		SigningIdentity: &mb.SigningIdentityInfo{
-			PublicSigner:  []byte{}, // 节点证书(signCerts)
-			PrivateSigner: nil,
-		},
+		return nil, fmt.Errorf("create new msp failed: %v", err)
 	}
 
-	data, err := proto.Marshal(mspConfig)
+	mspConfig, err := msp.GetLocalMspConfig(mspPath, factory.GetDefaultOpts(), mspID)
 	if err != nil {
-		log.Println(err)
-		return
+		return nil, fmt.Errorf("get local msp config failed: %v", err)
 	}
 
-	_ = &mb.MSPConfig{
-		Type:   int32(msp.FABRIC),
-		Config: data,
+	err = amsp.Setup(mspConfig)
+	if err != nil {
+		return nil, fmt.Errorf("setup msp failed: %v", err)
 	}
+
+	return amsp.GetDefaultSigningIdentity()
 }
 
 // getChaincodeSpec
@@ -501,28 +464,25 @@ func GetPeerClients(peers []Endpoint) []*client.PeerClient {
 //CloseClients close []*client.PeerClient,[]*client.OrdererClient,[]*client.Client
 // or *client.PeerClient,*client.OrdererClient,*client.Client
 func CloseClients(s interface{}) {
-	switch s.(type) {
+	switch s := s.(type) {
 	case []*client.PeerClient:
-		x := s.([]*client.PeerClient)
-		for i := range x {
-			x[i].Close()
+		for i := range s {
+			s[i].Close()
 		}
 	case []*client.OrdererClient:
-		x := s.([]*client.OrdererClient)
-		for i := range x {
-			x[i].Close()
+		for i := range s {
+			s[i].Close()
 		}
 	case []*client.Client:
-		x := s.([]*client.Client)
-		for i := range x {
-			x[i].Close()
+		for i := range s {
+			s[i].Close()
 		}
 	case *client.PeerClient:
-		s.(*client.PeerClient).Close()
+		s.Close()
 	case *client.OrdererClient:
-		s.(*client.OrdererClient).Close()
+		s.Close()
 	case *client.Client:
-		s.(*client.Client).Close()
+		s.Close()
 	default:
 		log.Println("un know client type")
 	}

@@ -10,7 +10,6 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/msp"
-	"github.com/hyperledger/fabric/msp/mgmt"
 )
 
 //GrpcTLSOpt grpc tls opt(cert is []byte)
@@ -195,7 +194,7 @@ func (g *Group) EndorserProposal(endorserAddress []string, sp *peer.SignedPropos
 }
 
 //AddSigner add a msp
-func (g *Group) addSigner(mspID, mspPath string) error {
+func (g *Group) AddSigner(mspID, mspPath string) error {
 	signer, err := getSigner(mspPath, mspID)
 	if err != nil {
 		return fmt.Errorf("get signer failed: %v", err)
@@ -206,8 +205,7 @@ func (g *Group) addSigner(mspID, mspPath string) error {
 }
 
 //GetSigner get map signing
-// TODO can't use fabric msp load
-func (g *Group) getSigner(mspID string) *msp.SigningIdentity {
+func (g *Group) GetSigner(mspID string) *msp.SigningIdentity {
 	v, _ := g.signers.Load(mspID)
 	if v == nil {
 		return nil
@@ -223,7 +221,7 @@ func (g *Group) getSigner(mspID string) *msp.SigningIdentity {
 
 //DeleteSigner delete a msp
 // TODO can't use fabric msp load
-func (g *Group) deleteSigner(mspID string) {
+func (g *Group) DeleteSigner(mspID string) {
 	g.signers.Delete(mspID)
 }
 
@@ -243,16 +241,21 @@ func (c *clientCache) getSyncMap() *sync.Map {
 	return &c.stack
 }
 
-// GetSigner initialize msp
 func getSigner(mspPath, mspID string) (msp.SigningIdentity, error) {
-	err := mgmt.LoadLocalMsp(
-		mspPath, // core.yaml -> peer_mspConfigPath
-		factory.GetDefaultOpts(),
-		mspID, // peer_localMspId
-		// msp.ProviderTypeToString(msp.FABRIC), // peer_localMspType, DEFAULT: SW
-	)
+	amsp, err := msp.New(msp.Options["bccsp"], factory.GetDefault())
 	if err != nil {
-		return nil, fmt.Errorf("load local msp failed: %v", err)
+		return nil, fmt.Errorf("create new msp failed: %v", err)
 	}
-	return mgmt.GetLocalMSP(factory.GetDefault()).GetDefaultSigningIdentity()
+
+	mspConfig, err := msp.GetLocalMspConfig(mspPath, factory.GetDefaultOpts(), mspID)
+	if err != nil {
+		return nil, fmt.Errorf("get local msp config failed: %v", err)
+	}
+
+	err = amsp.Setup(mspConfig)
+	if err != nil {
+		return nil, fmt.Errorf("setup msp failed: %v", err)
+	}
+
+	return amsp.GetDefaultSigningIdentity()
 }
