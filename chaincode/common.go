@@ -15,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/msp"
-	"github.com/pkg/errors"
 )
 
 func GetSigner(mspPath, mspID string) (msp.SigningIdentity, error) {
@@ -340,14 +339,14 @@ func getCollectionConfigFromBytes(cconfBytes []byte) (*peer.CollectionConfigPack
 	cconf := &[]collectionConfigJSON{}
 	err := json.Unmarshal(cconfBytes, cconf)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not parse the collection configuration")
+		return nil, nil, fmt.Errorf("could not parse the collection configuration: %w", err)
 	}
 
 	ccarray := make([]*peer.CollectionConfig, 0, len(*cconf))
 	for _, cconfitem := range *cconf {
 		p, err := policydsl.FromString(cconfitem.Policy)
 		if err != nil {
-			return nil, nil, errors.WithMessagef(err, "invalid policy %s", cconfitem.Policy)
+			return nil, nil, fmt.Errorf("invalid policy %s : %w", cconfitem.Policy, err)
 		}
 
 		cpc := &peer.CollectionPolicyConfig{

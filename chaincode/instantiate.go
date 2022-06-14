@@ -3,6 +3,7 @@ package chaincode
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protoutil"
-	"github.com/pkg/errors"
 )
 
 //Instantiate init a chaincode
@@ -51,7 +51,7 @@ func getSingedTx(channelID string, cTor string,
 	peerClient client.PeerClient) (*protcommon.Envelope, error) {
 	input := &peer.ChaincodeInput{}
 	if err := json.Unmarshal([]byte(cTor), &input); err != nil {
-		return nil, errors.Wrap(err, "chaincode argument error")
+		return nil, fmt.Errorf("chaincode argument error: %w", err)
 	}
 	input.IsInit = chainOpt.IsInit
 
@@ -72,7 +72,7 @@ func getSingedTx(channelID string, cTor string,
 	if chainOpt.Policy != "" {
 		p, err := policydsl.FromString(chainOpt.Policy)
 		if err != nil {
-			return nil, errors.Errorf("invalid policy %s", chainOpt.Policy)
+			return nil, fmt.Errorf("invalid policy %s", chainOpt.Policy)
 		}
 		policyMarshalled = protoutil.MarshalOrPanic(p)
 	}

@@ -12,10 +12,11 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
+	"fmt"
 	"net"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
 )
@@ -89,14 +90,14 @@ func NewBindingInspector(mutualTLS bool, extractTLSCertHash CertHashExtractor) B
 // an error is returned.
 func mutualTLSBinding(ctx context.Context, claimedTLScertHash []byte) error {
 	if len(claimedTLScertHash) == 0 {
-		return errors.Errorf("client didn't include its TLS cert hash")
+		return fmt.Errorf("client didn't include its TLS cert hash")
 	}
 	actualTLScertHash := ExtractCertificateHashFromContext(ctx)
 	if len(actualTLScertHash) == 0 {
-		return errors.Errorf("client didn't send a TLS certificate")
+		return fmt.Errorf("client didn't send a TLS certificate")
 	}
 	if !bytes.Equal(actualTLScertHash, claimedTLScertHash) {
-		return errors.Errorf("claimed TLS cert hash is %v but actual TLS cert hash is %v", claimedTLScertHash, actualTLScertHash)
+		return fmt.Errorf("claimed TLS cert hash is %v but actual TLS cert hash is %v", claimedTLScertHash, actualTLScertHash)
 	}
 	return nil
 }
@@ -166,5 +167,5 @@ func GetLocalIP() (string, error) {
 			}
 		}
 	}
-	return "", errors.Errorf("no non-loopback, IPv4 interface detected")
+	return "", fmt.Errorf("no non-loopback, IPv4 interface detected")
 }

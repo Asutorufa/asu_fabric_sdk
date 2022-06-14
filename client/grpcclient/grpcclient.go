@@ -10,9 +10,10 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
+	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -79,7 +80,7 @@ func (client *GRPCClient) parseSecureOptions(opts SecureOptions) error {
 			err := AddPemToCertPool(certBytes, client.tlsConfig.RootCAs)
 			if err != nil {
 				//commLogger.Debugf("error adding root certificate: %v", err)
-				return errors.WithMessage(err, "error adding root certificate")
+				return fmt.Errorf("error adding root certificate: %w", err)
 			}
 		}
 	}
@@ -90,7 +91,7 @@ func (client *GRPCClient) parseSecureOptions(opts SecureOptions) error {
 			cert, err := tls.X509KeyPair(opts.Certificate,
 				opts.Key)
 			if err != nil {
-				return errors.WithMessage(err, "failed to load client certificate")
+				return fmt.Errorf("failed to load client certificate: %w", err)
 			}
 			client.tlsConfig.Certificates = append(
 				client.tlsConfig.Certificates, cert)
@@ -151,7 +152,7 @@ func (client *GRPCClient) SetServerRootCAs(serverRoots [][]byte) error {
 	for _, root := range serverRoots {
 		err := AddPemToCertPool(root, certPool)
 		if err != nil {
-			return errors.WithMessage(err, "error adding root certificate")
+			return fmt.Errorf("error adding root certificate: %w", err)
 		}
 	}
 	client.tlsConfig.RootCAs = certPool
@@ -204,8 +205,7 @@ func (client *GRPCClient) NewConnection(address string, tlsOptions ...TLSOption)
 	defer cancel()
 	conn, err := grpc.DialContext(ctx, address, dialOpts...)
 	if err != nil {
-		return nil, errors.WithMessage(errors.WithStack(err),
-			"failed to create new connection")
+		return nil, fmt.Errorf("failed to create new connection: %w", err)
 	}
 	return conn, nil
 }

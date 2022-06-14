@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Asutorufa/fabricsdk/chaincode"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/core/scc/cscc"
 )

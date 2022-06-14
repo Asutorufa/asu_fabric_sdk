@@ -3,6 +3,7 @@ package lifecycle
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protoutil"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -279,7 +279,7 @@ func signProposal(proposal *peer.Proposal, signer msp.SigningIdentity) (*peer.Si
 
 	proposalBytes, err := proto.Marshal(proposal)
 	if err != nil {
-		return nil, errors.Wrap(err, "error marshaling proposal")
+		return nil, fmt.Errorf("error marshaling proposal: %w", err)
 	}
 
 	signature, err := signer.Sign(proposalBytes)
@@ -300,7 +300,7 @@ func createProposal(
 ) (*peer.Proposal, string, error) {
 	argsBytes, err := proto.Marshal(args)
 	if err != nil {
-		return nil, "", errors.Wrap(err, "failed to marshal args")
+		return nil, "", fmt.Errorf("failed to marshal args: %w", err)
 	}
 	ccInput := &peer.ChaincodeInput{Args: [][]byte{[]byte(function), argsBytes}}
 
@@ -313,12 +313,12 @@ func createProposal(
 
 	signerSerialized, err := signer.Serialize()
 	if err != nil {
-		return nil, "", errors.WithMessage(err, "failed to serialize identity")
+		return nil, "", fmt.Errorf("failed to serialize identity: %w", err)
 	}
 
 	proposal, txID, err := protoutil.CreateProposalFromCIS(common.HeaderType_ENDORSER_TRANSACTION, channel, cis, signerSerialized)
 	if err != nil {
-		return nil, "", errors.WithMessage(err, "failed to create ChaincodeInvocationSpec proposal")
+		return nil, "", fmt.Errorf("failed to create ChaincodeInvocationSpec proposal: %w", err)
 	}
 
 	return proposal, txID, nil
