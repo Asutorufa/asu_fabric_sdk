@@ -26,17 +26,13 @@ func NewClient(address, override string, Opt ...func(config *grpcclient.ClientCo
 		Opt[oi](config)
 	}
 
-	client := &Client{
-		address: address,
-		sn:      override,
-	}
+	client := &Client{address: address, sn: override}
 
 	var opt []grpc.DialOption
 
 	if config.SecOpts.UseTLS || config.SecOpts.RequireClientCert {
-		c := &tls.Config{
-			ServerName: override,
-		}
+		c := &tls.Config{ServerName: override}
+
 		if config.SecOpts.UseTLS {
 			certPool := x509.NewCertPool()
 			for i := range config.SecOpts.ServerRootCAs {

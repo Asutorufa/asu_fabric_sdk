@@ -11,7 +11,9 @@ import (
 
 	"github.com/Asutorufa/fabricsdk/client"
 	"github.com/golang/protobuf/proto"
+	mb "github.com/hyperledger/fabric-protos-go/msp"
 	"github.com/hyperledger/fabric-protos-go/peer"
+	"github.com/hyperledger/fabric/bccsp"
 	"github.com/hyperledger/fabric/bccsp/factory"
 	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/msp"
@@ -34,6 +36,43 @@ func GetSigner(mspPath, mspID string) (msp.SigningIdentity, error) {
 	}
 
 	return amsp.GetDefaultSigningIdentity()
+}
+
+func createSigner(
+	mspID string,
+	mspSignCerts [][]byte, // from msp/singercerts/*.pem
+	RootCerts [][]byte, // from msp/cacerts/*.pem
+	adminCerts [][]byte, // from msp/admincerts/*.pem
+	intermediateCerts [][]byte, // from msp/intermediatecerts/*.pem
+	rcl [][]byte, // from msp/crls/*.pem
+	tlsCaCerts [][]byte, // from msp/tlscacerts/*.pem
+	tlsIntermediateCerts [][]byte, // from msp/tlsintermediatecerts/*.pem
+	ous []*mb.FabricOUIdentifier,
+	nodeOUs *mb.FabricNodeOUs,
+) (*mb.MSPConfig, error) {
+	fmspc := &mb.FabricMSPConfig{
+		Name:                          mspID,
+		SigningIdentity:               &mb.SigningIdentityInfo{PublicSigner: mspSignCerts[0], PrivateSigner: nil},
+		RootCerts:                     RootCerts,
+		Admins:                        adminCerts,
+		IntermediateCerts:             intermediateCerts,
+		RevocationList:                rcl,
+		TlsRootCerts:                  tlsCaCerts,
+		TlsIntermediateCerts:          tlsIntermediateCerts,
+		OrganizationalUnitIdentifiers: ous,
+		FabricNodeOus:                 nodeOUs,
+		CryptoConfig: &mb.FabricCryptoConfig{
+			SignatureHashFamily:            bccsp.SHA2,
+			IdentityIdentifierHashFunction: bccsp.SHA256,
+		},
+	}
+
+	data, err := proto.Marshal(fmspc)
+	if err != nil {
+		return nil, fmt.Errorf("marshal msp config failed: %v", err)
+	}
+
+	return &mb.MSPConfig{Type: int32(msp.FABRIC), Config: data}, nil
 }
 
 // getChaincodeSpec

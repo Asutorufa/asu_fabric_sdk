@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"google.golang.org/grpc"
@@ -73,37 +74,40 @@ func (client *GRPCClient) parseSecureOptions(opts SecureOptions) error {
 	client.tlsConfig = &tls.Config{
 		VerifyPeerCertificate: opts.VerifyCertificate,
 		MinVersion:            tls.VersionTLS12,
+		InsecureSkipVerify:    opts.InsecureSkipVerify,
 	}
+
+	certPool, err := x509.SystemCertPool()
+	if err != nil {
+		log.Println("get system cert pool failed:", err)
+		certPool = x509.NewCertPool()
+	}
+	client.tlsConfig.RootCAs = certPool
+
 	if len(opts.ServerRootCAs) > 0 {
-		client.tlsConfig.RootCAs = x509.NewCertPool()
 		for _, certBytes := range opts.ServerRootCAs {
 			err := AddPemToCertPool(certBytes, client.tlsConfig.RootCAs)
 			if err != nil {
-				//commLogger.Debugf("error adding root certificate: %v", err)
 				return fmt.Errorf("error adding root certificate: %w", err)
 			}
 		}
 	}
+
 	if opts.RequireClientCert {
 		// make sure we have both Key and Certificate
-		if opts.Key != nil &&
-			opts.Certificate != nil {
-			cert, err := tls.X509KeyPair(opts.Certificate,
-				opts.Key)
-			if err != nil {
-				return fmt.Errorf("failed to load client certificate: %w", err)
-			}
-			client.tlsConfig.Certificates = append(
-				client.tlsConfig.Certificates, cert)
-		} else {
+		if opts.Key == nil || opts.Certificate == nil {
 			return errors.New("both Key and Certificate are required when using mutual TLS")
 		}
+
+		cert, err := tls.X509KeyPair(opts.Certificate, opts.Key)
+		if err != nil {
+			return fmt.Errorf("failed to load client certificate: %w", err)
+		}
+		client.tlsConfig.Certificates = append(client.tlsConfig.Certificates, cert)
 	}
 
 	if opts.TimeShift > 0 {
-		client.tlsConfig.Time = func() time.Time {
-			return time.Now().Add((-1) * opts.TimeShift)
-		}
+		client.tlsConfig.Time = func() time.Time { return time.Now().Add((-1) * opts.TimeShift) }
 	}
 
 	return nil
@@ -145,7 +149,6 @@ func (client *GRPCClient) SetMaxSendMsgSize(size int) {
 // SetServerRootCAs sets the list of authorities used to verify server
 // certificates based on a list of PEM-encoded X509 certificate authorities
 func (client *GRPCClient) SetServerRootCAs(serverRoots [][]byte) error {
-
 	// NOTE: if no serverRoots are specified, the current cert pool will be
 	// replaced with an empty one
 	certPool := x509.NewCertPool()
@@ -177,7 +180,6 @@ func CertPoolOverride(pool *x509.CertPool) TLSOption {
 // overrides the server name used to verify the hostname on the
 // certificate returned by a server when using TLS
 func (client *GRPCClient) NewConnection(address string, tlsOptions ...TLSOption) (*grpc.ClientConn, error) {
-
 	var dialOpts []grpc.DialOption
 	dialOpts = append(dialOpts, client.dialOpts...)
 
@@ -187,10 +189,7 @@ func (client *GRPCClient) NewConnection(address string, tlsOptions ...TLSOption)
 	//  to take effect on a per connection basis
 	if client.tlsConfig != nil {
 		dialOpts = append(dialOpts, grpc.WithTransportCredentials(
-			&DynamicClientCredentials{
-				TLSConfig:  client.tlsConfig,
-				TLSOptions: tlsOptions,
-			},
+			&DynamicClientCredentials{TLSConfig: client.tlsConfig, TLSOptions: tlsOptions},
 		))
 	} else {
 		dialOpts = append(dialOpts, grpc.WithInsecure())
